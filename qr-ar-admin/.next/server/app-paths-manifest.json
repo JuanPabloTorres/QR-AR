@@ -1,6 +1,4 @@
 {
-  "/api/experiences/route": "app/api/experiences/route.js",
-  "/favicon.ico/route": "app/favicon.ico/route.js",
   "/page": "app/page.js",
   "/experiences/page": "app/experiences/page.js",
   "/experiences/edit/[id]/page": "app/experiences/edit/[id]/page.js",
