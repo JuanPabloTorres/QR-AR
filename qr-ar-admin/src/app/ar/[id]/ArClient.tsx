@@ -4,17 +4,6 @@ import { useEffect, useRef, useState } from "react";
 
 import { Experience } from "@/types/experience";
 
-// type Experience = {
-//   id: string;
-//   title: string;
-//   type: "Video" | "Model3D" | "Message";
-//   mediaUrl: string;
-//   thumbnailUrl?: string;
-//   isActive: boolean;
-// };
-
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
-
 function useMindArScripts() {
   const [ready, setReady] = useState(false);
 
@@ -53,8 +42,9 @@ function useMindArScripts() {
           resolve();
         };
         l.onerror = (error) => {
-          console.error(`✗ Error loading CSS: ${href}`, error);
-          reject(new Error(`Failed to load CSS: ${href}`));
+          console.warn(`⚠️ Error loading CSS: ${href}`, error);
+          // Don't reject, just resolve to continue without blocking
+          resolve();
         };
         document.head.appendChild(l);
       });
@@ -76,9 +66,7 @@ function useMindArScripts() {
           throw new Error("AFRAME failed to load correctly");
         }
 
-        await addCss(
-          "https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image.prod.css"
-        );
+        await addCss("/ar-styles.css");
 
         await addScript(
           "https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"
@@ -123,53 +111,16 @@ export default function ArClient({ id }: { id: string }) {
   const [status, setStatus] = useState("Cargando…");
   const [error, setError] = useState<string>("");
   const [exp, setExp] = useState<Experience | null>(null);
+  const [modelLoaded, setModelLoaded] = useState(false);
+  const [modelError, setModelError] = useState<string>("");
   const videoRef = useRef<HTMLVideoElement | null>(null);
-
-  const targetSrc = "/targets/targets.mind";
-
-  // Hardcoded test experiences
-  const testExperiences: Record<string, Experience> = {
-    "test-message": {
-      id: "test-message",
-      title: "¡Hola AR!",
-      type: "Message",
-      mediaUrl: "",
-      isActive: true,
-    },
-    "test-video": {
-      id: "test-video",
-      title: "Video de prueba",
-      type: "Video",
-      mediaUrl:
-        "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-      isActive: true,
-    },
-    "test-model": {
-      id: "test-model",
-      title: "Modelo 3D de prueba",
-      type: "Model3D",
-      mediaUrl:
-        "https://cdn.glitch.com/36cb8393-65c6-408d-a538-055ada20431b/Astronaut.glb",
-      isActive: true,
-    },
-  };
 
   // Fetch experience
   useEffect(() => {
     if (!id) return;
 
-    // First check if it's a test experience
-    if (testExperiences[id]) {
-      setExp(testExperiences[id]);
-      setStatus("Test experience loaded ✓");
-      return;
-    }
-
-    // If not a test experience, try to load from API
-    const url = `${API_BASE.replace(
-      /\/$/,
-      ""
-    )}/api/experiences/${encodeURIComponent(id)}`;
+    // Get experience from API only
+    const url = `/api/experiences/${encodeURIComponent(id)}`;
     setStatus("Loading experience…");
     fetch(url, { headers: { Accept: "application/json" }, cache: "no-store" })
       .then(async (r) => {
@@ -182,9 +133,10 @@ export default function ArClient({ id }: { id: string }) {
       .then((data: Experience) => {
         if (!data.isActive) throw new Error("Inactive experience");
         setExp(data);
+        console.log("Using API experience:", data);
       })
       .catch((e) => {
-        console.error(e);
+        console.error("Error loading experience from API:", e);
         setError(e?.message || String(e));
       });
   }, [id]);
@@ -206,7 +158,7 @@ export default function ArClient({ id }: { id: string }) {
     if (error) setStatus(`Error: ${error}`);
     else if (!scriptsReady) setStatus("Loading AR engine…");
     else if (!exp) setStatus("Waiting for data…");
-    else setStatus("Point to your target image");
+    else setStatus("AR Ready - Move your device to explore!");
   }, [scriptsReady, exp, error]);
 
   // MindAR logs
@@ -228,75 +180,365 @@ export default function ArClient({ id }: { id: string }) {
     };
   }, [scriptsReady]);
 
+  // Manejo específico de modelos 3D
+  useEffect(() => {
+    if (!scriptsReady || !exp || exp.type !== "Model3D") return;
+
+    const scene = document.querySelector("a-scene");
+    if (!scene) return;
+
+    // Interceptar y silenciar errores de THREE.js de NaN
+    const originalConsoleError = console.error;
+    const filteredConsoleError = (...args: any[]) => {
+      const message = args.join(" ");
+      // Filtrar errores conocidos de geometría que no afectan la funcionalidad
+      if (
+        message.includes("computeBoundingSphere") &&
+        message.includes("NaN")
+      ) {
+        console.warn(
+          "[AR] Geometría con valores NaN detectada, pero el modelo puede seguir funcionando:",
+          ...args
+        );
+        return;
+      }
+      originalConsoleError.apply(console, args);
+    };
+    console.error = filteredConsoleError;
+
+    const onModelLoaded = (e: any) => {
+      console.log("[AR] Model loaded successfully", e);
+
+      try {
+        // Validar el modelo cargado de manera más tolerante
+        const model = e.target;
+        const object3D = model.getObject3D("mesh");
+
+        if (object3D) {
+          // Reparar geometría si es posible
+          object3D.traverse((child: any) => {
+            if (child.geometry) {
+              try {
+                // Intentar computar bounding box y sphere de manera segura
+                if (
+                  child.geometry.attributes &&
+                  child.geometry.attributes.position
+                ) {
+                  const positions = child.geometry.attributes.position.array;
+
+                  // Verificar si hay valores válidos
+                  let hasValidPositions = false;
+                  for (let i = 0; i < positions.length; i += 3) {
+                    if (
+                      isFinite(positions[i]) &&
+                      isFinite(positions[i + 1]) &&
+                      isFinite(positions[i + 2])
+                    ) {
+                      hasValidPositions = true;
+                      break;
+                    }
+                  }
+
+                  if (hasValidPositions) {
+                    child.geometry.computeBoundingBox();
+                    child.geometry.computeBoundingSphere();
+                  } else {
+                    console.warn(
+                      "[AR] Geometría con posiciones inválidas, usando valores por defecto"
+                    );
+                    // Crear bounding sphere por defecto
+                    child.geometry.boundingSphere = {
+                      center: { x: 0, y: 0, z: 0 },
+                      radius: 1,
+                    };
+                  }
+                }
+              } catch (geomError) {
+                console.warn(
+                  "[AR] Error al procesar geometría, continuando:",
+                  geomError
+                );
+              }
+            }
+          });
+        }
+
+        setModelLoaded(true);
+        setModelError("");
+        setStatus("🎯 Ti-pche cargado - ¡Explora en AR!");
+
+        // Ocultar indicador de carga
+        const loadingIndicator = scene.querySelector("#loadingIndicator");
+        if (loadingIndicator) {
+          loadingIndicator.setAttribute("visible", "false");
+        }
+      } catch (error) {
+        console.warn(
+          "[AR] Error durante la validación, pero el modelo puede funcionar:",
+          error
+        );
+        // No marcar como error crítico si el modelo se cargó visualmente
+        setModelLoaded(true);
+        setStatus("🎯 Ti-pche cargado (con advertencias)");
+
+        const loadingIndicator = scene.querySelector("#loadingIndicator");
+        if (loadingIndicator) {
+          loadingIndicator.setAttribute("visible", "false");
+        }
+      }
+    };
+
+    const onModelError = (e: any) => {
+      console.error("[AR] Model loading error", e);
+      setModelError("Error cargando el modelo Ti-pche");
+      setStatus("❌ Error cargando modelo Ti-pche");
+
+      // Ocultar indicador de carga
+      const loadingIndicator = scene.querySelector("#loadingIndicator");
+      if (loadingIndicator) {
+        loadingIndicator.setAttribute("visible", "false");
+      }
+    };
+
+    // Mostrar indicador de carga para modelos
+    setTimeout(() => {
+      const loadingIndicator = scene.querySelector("#loadingIndicator");
+      if (loadingIndicator && !modelLoaded) {
+        loadingIndicator.setAttribute("visible", "true");
+      }
+    }, 1000);
+
+    const model = scene.querySelector("[gltf-model]");
+    if (model) {
+      model.addEventListener("model-loaded", onModelLoaded);
+      model.addEventListener("model-error", onModelError);
+    }
+
+    return () => {
+      // Restaurar console.error original
+      console.error = originalConsoleError;
+
+      if (model) {
+        model.removeEventListener("model-loaded", onModelLoaded);
+        model.removeEventListener("model-error", onModelError);
+      }
+    };
+  }, [scriptsReady, exp, modelLoaded]);
+
   return (
     <>
-      <Status text={status} error={!!error} />
+      <Status text={status} error={!!error || !!modelError} />
 
       {!scriptsReady || !exp ? null : (
         <a-scene
-          mindar-image={`imageTargetSrc: ${targetSrc}; filterMinCF:0.0001; filterBeta:0.001;`}
           vr-mode-ui="enabled: false"
           embedded
           renderer="colorManagement: true; physicallyCorrectLights: true; antialias: true"
           device-orientation-permission-ui="enabled: true"
           className="w-screen h-screen"
         >
-          <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+          <a-camera
+            position="0 1.6 0"
+            look-controls="enabled: true"
+            wasd-controls="enabled: true"
+          ></a-camera>
 
           {/* Luz para modelos */}
-          <a-entity light="type: ambient; intensity: 0.8"></a-entity>
+          <a-entity light="type: ambient; intensity: 1.0"></a-entity>
           <a-entity
-            light="type: directional; intensity: 0.7"
-            position="1 1 1"
+            light="type: directional; intensity: 1.0"
+            position="2 4 5"
           ></a-entity>
 
-          {/* Target #0 */}
-          <a-entity mindar-image-target="targetIndex: 0">
-            <a-entity id="targetRoot">
-              {exp.type === "Video" && (
-                <>
-                  <a-assets>
-                    <video
-                      id="dynVideo"
-                      ref={videoRef}
-                      src={exp.mediaUrl}
-                      crossOrigin="anonymous"
-                      preload="auto"
-                      muted
-                      playsInline
-                      loop
-                    />
-                  </a-assets>
-
-                  <a-video
-                    src="#dynVideo"
-                    width="1" // ajusta al tamaño visual de tu target
-                    height="0.5625" // 16:9
-                    position="0 0 0"
-                    rotation="0 0 0"
+          {/* Contenido AR directo - posicionado para mejor visualización */}
+          <a-entity id="arContent" position="0 1.6 -2">
+            {exp.type === "Video" && (
+              <>
+                <a-assets>
+                  <video
+                    id="dynVideo"
+                    ref={videoRef}
+                    src={exp.mediaUrl}
+                    crossOrigin="anonymous"
+                    preload="auto"
+                    muted
+                    playsInline
+                    loop
                   />
-                </>
-              )}
+                </a-assets>
 
-              {exp.type === "Model3D" && (
-                <a-entity
-                  gltf-model={exp.mediaUrl}
+                <a-video
+                  src="#dynVideo"
+                  width="3"
+                  height="1.6875"
                   position="0 0 0"
                   rotation="0 0 0"
-                  scale="0.25 0.25 0.25"
                 />
-              )}
-
-              {exp.type === "Message" && (
                 <a-text
-                  value={exp.title ?? "Mensaje"}
+                  value={`🎬 ${exp.title}`}
+                  position="0 -1.2 0"
+                  align="center"
+                  color="#ffffff"
+                  scale="1.2 1.2 1.2"
+                ></a-text>
+              </>
+            )}
+
+            {exp.type === "Image" && (
+              <>
+                <a-image
+                  src={exp.mediaUrl}
+                  width="3"
+                  height="3"
+                  position="0 0 0"
+                  rotation="0 0 0"
+                  transparent="true"
+                ></a-image>
+                <a-text
+                  value={`🖼️ ${exp.title}`}
+                  position="0 -2 0"
+                  align="center"
+                  color="#ffffff"
+                  scale="1.2 1.2 1.2"
+                ></a-text>
+              </>
+            )}
+
+            {exp.type === "Model3D" && (
+              <>
+                {/* Verificar URL válida antes de cargar */}
+                {exp.mediaUrl && exp.mediaUrl.trim() !== "" ? (
+                  <>
+                    {/* Modelo Ti-pche con configuración específica */}
+                    <a-entity
+                      gltf-model={exp.mediaUrl}
+                      position="0 -0.2 0"
+                      rotation="0 0 0"
+                      scale="1.5 1.5 1.5"
+                      animation="property: rotation; to: 0 360 0; loop: true; dur: 30000; easing: linear"
+                      shadow="cast: true; receive: true"
+                      className="clickable"
+                      cursor="rayOrigin: mouse"
+                    >
+                      {/* Animaciones específicas para Ti-pche */}
+                      <a-animation
+                        attribute="scale"
+                        from="1.5 1.5 1.5"
+                        to="1.8 1.8 1.8"
+                        begin="mouseenter"
+                        dur="500"
+                        direction="normal"
+                      ></a-animation>
+                      <a-animation
+                        attribute="scale"
+                        from="1.8 1.8 1.8"
+                        to="1.5 1.5 1.5"
+                        begin="mouseleave"
+                        dur="500"
+                        direction="normal"
+                      ></a-animation>
+                    </a-entity>
+
+                    {/* Superficie para sombras */}
+                    <a-plane
+                      position="0 -0.8 0"
+                      rotation="-90 0 0"
+                      width="4"
+                      height="4"
+                      color="#333333"
+                      opacity="0.2"
+                      shadow="receive: true"
+                      material="transparent: true"
+                    ></a-plane>
+                  </>
+                ) : (
+                  /* Mensaje de error si no hay URL válida */
+                  <a-text
+                    value="❌ URL de modelo no válida"
+                    position="0 0 0"
+                    align="center"
+                    color="#ff4444"
+                    scale="1.2 1.2 1.2"
+                  ></a-text>
+                )}
+
+                {/* Información del modelo */}
+                <a-text
+                  value={`� ${exp.title}`}
+                  position="0 -1.5 0"
+                  align="center"
+                  color="#ffffff"
+                  scale="1.2 1.2 1.2"
+                  geometry="primitive: plane; width: auto"
+                  material="color: #8B4513; opacity: 0.8"
+                ></a-text>
+
+                {/* Mensaje de error específico */}
+                {modelError && (
+                  <a-text
+                    value={`⚠️ ${modelError}`}
+                    position="0 -1.8 0"
+                    align="center"
+                    color="#ff6666"
+                    scale="0.9 0.9 0.9"
+                  ></a-text>
+                )}
+
+                {/* Controles de interacción específicos para Ti-pche */}
+                <a-text
+                  value="🏺 Explora la vasija Ti-pche • � Toca para ver detalles"
+                  position="0 -2.2 0"
+                  align="center"
+                  color="#DAA520"
+                  scale="0.8 0.8 0.8"
+                ></a-text>
+
+                {/* Indicador de carga mejorado */}
+                <a-ring
+                  position="0 1.5 0"
+                  radius-inner="0.1"
+                  radius-outer="0.15"
+                  color="#ffaa00"
+                  animation="property: rotation; to: 0 0 360; loop: true; dur: 1000"
+                  visible="false"
+                  id="loadingIndicator"
+                ></a-ring>
+
+                {/* Información de debug (solo en desarrollo) */}
+                {process.env.NODE_ENV === "development" && (
+                  <a-text
+                    value={`Debug: ${exp.mediaUrl}`}
+                    position="0 -2.8 0"
+                    align="center"
+                    color="#666666"
+                    scale="0.6 0.6 0.6"
+                  ></a-text>
+                )}
+              </>
+            )}
+
+            {exp.type === "Message" && (
+              <>
+                <a-text
+                  value={exp.title ?? "Mensaje AR"}
                   color="#ffffff"
                   align="center"
-                  position="0 0 0"
+                  position="0 0.3 0"
                   rotation="0 0 0"
-                />
-              )}
-            </a-entity>
+                  scale="2.5 2.5 2.5"
+                  shader="msdf"
+                  font="dejavu"
+                ></a-text>
+                <a-text
+                  value="💫 ¡Experiencia AR Activada!"
+                  color="#00ff88"
+                  align="center"
+                  position="0 -0.5 0"
+                  rotation="0 0 0"
+                  scale="1.3 1.3 1.3"
+                ></a-text>
+              </>
+            )}
           </a-entity>
         </a-scene>
       )}

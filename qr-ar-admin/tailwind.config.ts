@@ -19,6 +19,9 @@ const config: Config = {
         scaleIn: "scaleIn 0.3s ease-out forwards",
         shimmer: "shimmer 2s linear infinite",
       },
+      maxHeight: {
+        "48": "12rem", // 192px
+      },
       keyframes: {
         fadeIn: {
           "0%": { opacity: "0", transform: "translateY(20px)" },

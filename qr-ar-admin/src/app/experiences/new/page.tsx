@@ -24,12 +24,18 @@ export default function NewExperiencePage() {
     try {
       const id = generateShortUUID();
 
+      // Generate QR code URL for the experience
+      const baseUrl =
+        typeof window !== "undefined" ? window.location.origin : "";
+      const qrCodeUrl = `${baseUrl}/ar/${id}`;
+
       const exp = await createExperience({
         title,
         type,
         mediaUrl,
         thumbnailUrl,
         isActive,
+        qrCodeUrl,
       });
       setCreatedId(id); // Usamos el ID generado localmente
     } catch (err: any) {
@@ -262,11 +268,11 @@ export default function NewExperiencePage() {
             <div className="relative">
               <input
                 id="mediaUrl"
-                type="url"
+                type="text"
                 className="w-full px-4 py-4 glass-input rounded-xl border border-white/20 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/25 transition-all duration-300 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                 value={mediaUrl}
                 onChange={(e) => setMediaUrl(e.target.value)}
-                placeholder="https://example.com/my-content"
+                placeholder="https://example.com/my-content or /models/model.glb"
                 required
               />
               <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-600/0 to-purple-600/0 hover:from-blue-600/5 hover:to-purple-600/5 transition-all duration-300 pointer-events-none"></div>
@@ -285,7 +291,8 @@ export default function NewExperiencePage() {
                   d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                 />
               </svg>
-              URL of the video, 3D model or content that will be displayed in AR
+              URL or path of the video, 3D model or content (e.g.,
+              https://example.com/model.glb or /models/model.glb)
             </p>
           </div>
 

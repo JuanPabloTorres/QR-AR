@@ -1,4 +1,5 @@
 // src/app/layout.tsx
+import Footer from "@/components/Footer";
 import "./globals.css";
 import Navigation from "@/components/layout/Navigation";
 
@@ -15,6 +16,7 @@ export default function RootLayout({
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             {children}
           </div>
+          <Footer />
         </div>
       </body>
     </html>

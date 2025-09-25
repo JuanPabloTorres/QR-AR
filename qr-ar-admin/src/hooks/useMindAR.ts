@@ -8,7 +8,10 @@ export function useMindArScripts() {
 
   useEffect(() => {
     // Already loaded?
-    if ((window as any).AFRAME && (window as any).MINDAR) {
+    if (
+      (window as unknown as Record<string, unknown>).AFRAME &&
+      (window as unknown as Record<string, unknown>).MINDAR
+    ) {
       setReady(true);
       return;
     }
@@ -61,7 +64,10 @@ export function useMindArScripts() {
         // Verify everything loaded correctly
         await new Promise<void>((resolve) => {
           const checkLoaded = () => {
-            if ((window as any).AFRAME && (window as any).MINDAR) {
+            if (
+              (window as unknown as Record<string, unknown>).AFRAME &&
+              (window as unknown as Record<string, unknown>).MINDAR
+            ) {
               console.log("✅ AR scripts ready");
               resolve();
             } else {

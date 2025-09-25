@@ -4,8 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import { Experience } from "@/types/experience";
 import "./ar-styles.css";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
-
 function useMindArScripts() {
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string>("");
@@ -117,55 +115,24 @@ export default function ArClient({ id }: { id: string }) {
   const sceneRef = useRef<any>(null);
 
   // Test experiences
-  const testExperiences: Record<string, Experience> = {
-    "test-message": {
-      id: "test-message",
-      title: "¡Hola Mundo AR!",
-      type: "Message",
-      mediaUrl: "",
-      isActive: true,
-    },
-    "test-video": {
-      id: "test-video",
-      title: "Video AR",
-      type: "Video",
-      mediaUrl:
-        "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-      isActive: true,
-    },
-    "test-model": {
-      id: "test-model",
-      title: "Astronauta 3D",
-      type: "Model3D",
-      mediaUrl:
-        "https://cdn.glitch.com/36cb8393-65c6-408d-a538-055ada20431b/Astronaut.glb",
-      isActive: true,
-    },
-  };
-
-  // Load experience
+  // Load experience from API only
   useEffect(() => {
     if (!id) return;
 
-    if (testExperiences[id]) {
-      setExp(testExperiences[id]);
-      setStatus("Experience loaded ✅");
-      return;
-    }
-
-    // Try to load from API
     setStatus("Loading experience...");
-    const url = `${API_BASE}/api/experiences/${encodeURIComponent(id)}`;
+    const url = `/api/experiences/${encodeURIComponent(id)}`;
 
     fetch(url, { headers: { Accept: "application/json" }, cache: "no-store" })
       .then(async (r) => {
-        if (!r.ok) throw new Error(`Error ${r.status}`);
+        if (!r.ok) throw new Error(`Error ${r.status}: ${await r.text()}`);
         const data = await r.json();
+        if (!data.isActive) throw new Error("Experience is not active");
         setExp(data);
         setStatus("Experience loaded from API ✅");
+        console.log("Using API experience:", data);
       })
       .catch((err) => {
-        console.error("Error loading experience:", err);
+        console.error("Error loading experience from API:", err);
         setError(`Could not load experience: ${err.message}`);
         setStatus("Error loading experience ❌");
       });

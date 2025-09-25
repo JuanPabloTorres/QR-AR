@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Experience } from "@/types/experience";
 import { useMindArScripts } from "@/hooks/useMindAR";
-import { getTestExperience } from "@/data/testExperiences";
 
 interface ArClientProps {
   id: string;
@@ -11,22 +10,77 @@ interface ArClientProps {
 
 export default function ArClient({ id }: ArClientProps) {
   const { ready: scriptsReady, error: scriptsError } = useMindArScripts();
-  const [status, setStatus] = useState("Inicializando...");
+  const [status, setStatus] = useState("Inicializando AR...");
   const [error, setError] = useState<string>("");
   const [exp, setExp] = useState<Experience | null>(null);
+  const [isMobileDevice, setIsMobileDevice] = useState(false);
+  const [hasCamera, setHasCamera] = useState(false);
+  const [cameraPermissionGranted, setCameraPermissionGranted] = useState(false);
+  const [awaitingPermission, setAwaitingPermission] = useState(false);
+  const arSceneRef = useRef<HTMLDivElement>(null);
 
-  // Load experience
+  // Check if device is mobile and has camera
+  useEffect(() => {
+    const checkDeviceCapabilities = async () => {
+      // Check if mobile
+      const userAgent = navigator.userAgent.toLowerCase();
+      const mobile =
+        /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/.test(
+          userAgent
+        );
+      setIsMobileDevice(mobile);
+
+      // Check for camera
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const hasVideoDevice = devices.some(
+          (device) => device.kind === "videoinput"
+        );
+        setHasCamera(hasVideoDevice);
+      } catch (err) {
+        console.warn("Could not enumerate devices:", err);
+        setHasCamera(false);
+      }
+    };
+
+    checkDeviceCapabilities();
+  }, []);
   useEffect(() => {
     if (!id) return;
 
-    const testExp = getTestExperience(id);
-    if (testExp) {
-      setExp(testExp);
-      setStatus("Experience loaded ✅");
-      return;
-    }
+    // Load experience from API only
+    const loadExperience = async () => {
+      try {
+        setStatus("Loading experience...");
+        const response = await fetch(
+          `/api/experiences/${encodeURIComponent(id)}`,
+          {
+            headers: { Accept: "application/json" },
+            cache: "no-store",
+          }
+        );
 
-    setError("Experience not found");
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+        }
+
+        const data: Experience = await response.json();
+
+        if (!data.isActive) {
+          throw new Error("Experience is not active");
+        }
+
+        setExp(data);
+        setStatus("Experience loaded ✅");
+        console.log("Using API experience:", data);
+      } catch (err) {
+        console.error("Error loading experience:", err);
+        setError(err instanceof Error ? err.message : String(err));
+        setStatus("Error loading experience ❌");
+      }
+    };
+
+    loadExperience();
   }, [id]);
 
   // Mostrar errores

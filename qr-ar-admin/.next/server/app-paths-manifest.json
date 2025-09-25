@@ -1,8 +1,9 @@
 {
   "/api/experiences/route": "app/api/experiences/route.js",
-  "/favicon.ico/route": "app/favicon.ico/route.js",
+  "/api/experiences/[id]/route": "app/api/experiences/[id]/route.js",
   "/page": "app/page.js",
   "/experiences/page": "app/experiences/page.js",
-  "/experiences/edit/[id]/page": "app/experiences/edit/[id]/page.js",
-  "/experiences/new/page": "app/experiences/new/page.js"
+  "/experiences/new/page": "app/experiences/new/page.js",
+  "/experiences/[id]/page": "app/experiences/[id]/page.js",
+  "/experiences/edit/[id]/page": "app/experiences/edit/[id]/page.js"
 }
