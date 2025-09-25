@@ -39,7 +39,7 @@ const pems = selfsigned.generate(attrs, {
       ip: '127.0.0.1',
     }, {
       type: 7,
-      ip: '192.168.0.7',
+      ip: '192.168.0.3',
     }],
   }],
 });
@@ -61,13 +61,13 @@ async function startServer() {
     server.listen(port, hostname, () => {
       console.log('✅ Servidor HTTPS iniciado exitosamente!');
       console.log(`📱 Local:   https://localhost:${port}`);
-      console.log(`🌐 Network: https://192.168.0.7:${port}`);
+      console.log(`🌐 Network: https://192.168.0.3:${port}`);
       console.log('');
       console.log('🔒 NOTA: Tendrás que aceptar el certificado autofirmado en el navegador.');
       console.log('📱 En móvil: Ve a "Configuración Avanzada" -> "Continuar hacia el sitio"');
       console.log('');
       console.log('🎯 Para probar AR en móvil:');
-      console.log(`   https://192.168.0.7:${port}/ar/test-message`);
+      console.log(`   https://192.168.0.3:${port}/ar/test-message`);
     });
     
     server.on('error', (err) => {

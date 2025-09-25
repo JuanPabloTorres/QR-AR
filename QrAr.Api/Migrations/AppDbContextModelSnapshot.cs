@@ -17,13 +17,15 @@ namespace QrAr.Api.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.9");
 
-            modelBuilder.Entity("AnalyticsEvent", b =>
+            modelBuilder.Entity("QrAr.Api.Models.AnalyticsEvent", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                    b.Property<string>("Id")
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("CreatedBy")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("EventName")
@@ -34,6 +36,12 @@ namespace QrAr.Api.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("TEXT");
+
                     b.HasKey("Id");
 
                     b.HasIndex("ExperienceId", "EventName", "CreatedAtUtc");
@@ -41,7 +49,7 @@ namespace QrAr.Api.Migrations
                     b.ToTable("Analytics");
                 });
 
-            modelBuilder.Entity("ExperienceRecord", b =>
+            modelBuilder.Entity("QrAr.Api.Models.Experience", b =>
                 {
                     b.Property<string>("Id")
                         .HasColumnType("TEXT");
@@ -49,10 +57,17 @@ namespace QrAr.Api.Migrations
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("TEXT");
 
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("TEXT");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("MediaUrl")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("QRCodeUrl")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
@@ -65,6 +80,12 @@ namespace QrAr.Api.Migrations
 
                     b.Property<string>("Type")
                         .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("UpdatedBy")
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");

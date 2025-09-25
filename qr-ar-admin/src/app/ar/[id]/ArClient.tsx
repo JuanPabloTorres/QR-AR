@@ -4,15 +4,6 @@ import { useEffect, useRef, useState } from "react";
 
 import { Experience } from "@/types/experience";
 
-// type Experience = {
-//   id: string;
-//   title: string;
-//   type: "Video" | "Model3D" | "Message";
-//   mediaUrl: string;
-//   thumbnailUrl?: string;
-//   isActive: boolean;
-// };
-
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
 
 function useMindArScripts() {
@@ -53,8 +44,9 @@ function useMindArScripts() {
           resolve();
         };
         l.onerror = (error) => {
-          console.error(`✗ Error loading CSS: ${href}`, error);
-          reject(new Error(`Failed to load CSS: ${href}`));
+          console.warn(`⚠️ Error loading CSS: ${href}`, error);
+          // Don't reject, just resolve to continue without blocking
+          resolve();
         };
         document.head.appendChild(l);
       });
@@ -76,9 +68,7 @@ function useMindArScripts() {
           throw new Error("AFRAME failed to load correctly");
         }
 
-        await addCss(
-          "https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image.prod.css"
-        );
+        await addCss("/ar-styles.css");
 
         await addScript(
           "https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"
@@ -125,51 +115,12 @@ export default function ArClient({ id }: { id: string }) {
   const [exp, setExp] = useState<Experience | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
-  const targetSrc = "/targets/targets.mind";
-
-  // Hardcoded test experiences
-  const testExperiences: Record<string, Experience> = {
-    "test-message": {
-      id: "test-message",
-      title: "¡Hola AR!",
-      type: "Message",
-      mediaUrl: "",
-      isActive: true,
-    },
-    "test-video": {
-      id: "test-video",
-      title: "Video de prueba",
-      type: "Video",
-      mediaUrl:
-        "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-      isActive: true,
-    },
-    "test-model": {
-      id: "test-model",
-      title: "Modelo 3D de prueba",
-      type: "Model3D",
-      mediaUrl:
-        "https://cdn.glitch.com/36cb8393-65c6-408d-a538-055ada20431b/Astronaut.glb",
-      isActive: true,
-    },
-  };
-
   // Fetch experience
   useEffect(() => {
     if (!id) return;
 
-    // First check if it's a test experience
-    if (testExperiences[id]) {
-      setExp(testExperiences[id]);
-      setStatus("Test experience loaded ✓");
-      return;
-    }
-
-    // If not a test experience, try to load from API
-    const url = `${API_BASE.replace(
-      /\/$/,
-      ""
-    )}/api/experiences/${encodeURIComponent(id)}`;
+    // Load from API
+    const url = `/api/experiences/${encodeURIComponent(id)}`;
     setStatus("Loading experience…");
     fetch(url, { headers: { Accept: "application/json" }, cache: "no-store" })
       .then(async (r) => {
@@ -206,7 +157,7 @@ export default function ArClient({ id }: { id: string }) {
     if (error) setStatus(`Error: ${error}`);
     else if (!scriptsReady) setStatus("Loading AR engine…");
     else if (!exp) setStatus("Waiting for data…");
-    else setStatus("Point to your target image");
+    else setStatus("AR Ready - Move your device to explore!");
   }, [scriptsReady, exp, error]);
 
   // MindAR logs
@@ -234,69 +185,119 @@ export default function ArClient({ id }: { id: string }) {
 
       {!scriptsReady || !exp ? null : (
         <a-scene
-          mindar-image={`imageTargetSrc: ${targetSrc}; filterMinCF:0.0001; filterBeta:0.001;`}
           vr-mode-ui="enabled: false"
           embedded
           renderer="colorManagement: true; physicallyCorrectLights: true; antialias: true"
           device-orientation-permission-ui="enabled: true"
           className="w-screen h-screen"
         >
-          <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+          <a-camera
+            position="0 1.6 0"
+            look-controls="enabled: true"
+            wasd-controls="enabled: true"
+          ></a-camera>
 
           {/* Luz para modelos */}
-          <a-entity light="type: ambient; intensity: 0.8"></a-entity>
+          <a-entity light="type: ambient; intensity: 1.0"></a-entity>
           <a-entity
-            light="type: directional; intensity: 0.7"
-            position="1 1 1"
+            light="type: directional; intensity: 1.0"
+            position="2 4 5"
           ></a-entity>
 
-          {/* Target #0 */}
-          <a-entity mindar-image-target="targetIndex: 0">
-            <a-entity id="targetRoot">
-              {exp.type === "Video" && (
-                <>
-                  <a-assets>
-                    <video
-                      id="dynVideo"
-                      ref={videoRef}
-                      src={exp.mediaUrl}
-                      crossOrigin="anonymous"
-                      preload="auto"
-                      muted
-                      playsInline
-                      loop
-                    />
-                  </a-assets>
-
-                  <a-video
-                    src="#dynVideo"
-                    width="1" // ajusta al tamaño visual de tu target
-                    height="0.5625" // 16:9
-                    position="0 0 0"
-                    rotation="0 0 0"
+          {/* Contenido AR directo - posicionado para mejor visualización */}
+          <a-entity id="arContent" position="0 1.6 -2">
+            {exp.type === "Video" && (
+              <>
+                <a-assets>
+                  <video
+                    id="dynVideo"
+                    ref={videoRef}
+                    src={exp.mediaUrl}
+                    crossOrigin="anonymous"
+                    preload="auto"
+                    muted
+                    playsInline
+                    loop
                   />
-                </>
-              )}
+                </a-assets>
 
-              {exp.type === "Model3D" && (
+                <a-video
+                  src="#dynVideo"
+                  width="3"
+                  height="1.6875"
+                  position="0 0 0"
+                  rotation="0 0 0"
+                />
+                <a-text
+                  value={`🎬 ${exp.title}`}
+                  position="0 -1.2 0"
+                  align="center"
+                  color="#ffffff"
+                  scale="1.2 1.2 1.2"
+                ></a-text>
+              </>
+            )}
+
+            {exp.type === "Image" && (
+              <>
+                <a-image
+                  src={exp.mediaUrl}
+                  width="3"
+                  height="3"
+                  position="0 0 0"
+                  rotation="0 0 0"
+                  transparent="true"
+                ></a-image>
+                <a-text
+                  value={`🖼️ ${exp.title}`}
+                  position="0 -2 0"
+                  align="center"
+                  color="#ffffff"
+                  scale="1.2 1.2 1.2"
+                ></a-text>
+              </>
+            )}
+
+            {exp.type === "Model3D" && (
+              <>
                 <a-entity
                   gltf-model={exp.mediaUrl}
                   position="0 0 0"
                   rotation="0 0 0"
-                  scale="0.25 0.25 0.25"
+                  scale="1 1 1"
                 />
-              )}
-
-              {exp.type === "Message" && (
                 <a-text
-                  value={exp.title ?? "Mensaje"}
+                  value={`🚀 ${exp.title}`}
+                  position="0 -1.5 0"
+                  align="center"
+                  color="#ffffff"
+                  scale="1.2 1.2 1.2"
+                ></a-text>
+              </>
+            )}
+
+            {exp.type === "Message" && (
+              <>
+                <a-text
+                  value={exp.title ?? "Mensaje AR"}
                   color="#ffffff"
                   align="center"
-                  position="0 0 0"
+                  position="0 0.3 0"
                   rotation="0 0 0"
-                />
-              )}
-            </a-entity>
+                  scale="2.5 2.5 2.5"
+                  shader="msdf"
+                  font="dejavu"
+                ></a-text>
+                <a-text
+                  value="💫 ¡Experiencia AR Activada!"
+                  color="#00ff88"
+                  align="center"
+                  position="0 -0.5 0"
+                  rotation="0 0 0"
+                  scale="1.3 1.3 1.3"
+                ></a-text>
+              </>
+            )}
           </a-entity>
         </a-scene>
       )}

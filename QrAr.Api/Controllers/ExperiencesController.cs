@@ -74,7 +74,7 @@ namespace QrAr.Api.Controllers
             return Results.Ok(new { total, page, pageSize, items });
         }
 
-        private static async Task<IResult> CreateExperience(ExperienceRecord experience, AppDbContext db)
+        private static async Task<IResult> CreateExperience(Experience experience, AppDbContext db)
         {
             if (string.IsNullOrWhiteSpace(experience.Id))
                 experience.Id = Guid.NewGuid().ToString("N");

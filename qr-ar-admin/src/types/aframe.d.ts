@@ -7,6 +7,7 @@ declare namespace React {
       "a-entity": any;
       "a-camera": any;
       "a-video": any;
+      "a-image": any;
       "a-assets": any;
       "a-text": any;
     }
