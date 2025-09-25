@@ -1,5 +1,5 @@
 // src/app/ar/[id]/page.tsx
-import ArClient from "@/components/ar/ArClient";
+import ArClient from "./ArClient";
 
 type Props = { params: Promise<{ id: string }> };
 

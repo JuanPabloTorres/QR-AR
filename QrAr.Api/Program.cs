@@ -50,7 +50,7 @@ using (var scope = app.Services.CreateScope())
 
     if (!db.Experiences.Any())
     {
-        db.Experiences.Add(new ExperienceRecord
+        db.Experiences.Add(new Experience
         {
             Id = "demo_video_01",
             Title = "Highlight MJ",

@@ -11,7 +11,7 @@ namespace QrAr.Api.Dtos
           bool IsActive,
           DateTime CreatedAtUtc)
     {
-        public static ExperienceDto ToDto(ExperienceRecord e) =>
+        public static ExperienceDto ToDto(Experience e) =>
             new(e.Id, e.Title, e.Type, e.MediaUrl, e.ThumbnailUrl, e.IsActive, e.CreatedAtUtc);
     }
 
