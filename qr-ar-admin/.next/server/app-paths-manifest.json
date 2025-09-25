@@ -1,4 +1,6 @@
 {
+  "/api/experiences/[id]/route": "app/api/experiences/[id]/route.js",
+  "/api/experiences/route": "app/api/experiences/route.js",
   "/experiences/page": "app/experiences/page.js",
   "/experiences/[id]/page": "app/experiences/[id]/page.js",
   "/page": "app/page.js",

@@ -4,42 +4,6 @@ import { useEffect, useRef, useState } from "react";
 
 import { Experience } from "@/types/experience";
 
-// Declaraciones de tipos para A-Frame (evita errores de TypeScript)
-declare global {
-  namespace JSX {
-    interface IntrinsicElements {
-      "a-scene": React.DetailedHTMLProps<
-        React.HTMLAttributes<HTMLElement>,
-        HTMLElement
-      >;
-      "a-camera": React.DetailedHTMLProps<
-        React.HTMLAttributes<HTMLElement>,
-        HTMLElement
-      >;
-      "a-entity": React.DetailedHTMLProps<
-        React.HTMLAttributes<HTMLElement>,
-        HTMLElement
-      >;
-      "a-text": React.DetailedHTMLProps<
-        React.HTMLAttributes<HTMLElement>,
-        HTMLElement
-      >;
-      "a-video": React.DetailedHTMLProps<
-        React.HTMLAttributes<HTMLElement>,
-        HTMLElement
-      >;
-      "a-image": React.DetailedHTMLProps<
-        React.HTMLAttributes<HTMLElement>,
-        HTMLElement
-      >;
-      "a-assets": React.DetailedHTMLProps<
-        React.HTMLAttributes<HTMLElement>,
-        HTMLElement
-      >;
-    }
-  }
-}
-
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
 
 function useMindArScripts() {
@@ -276,7 +240,6 @@ export default function ArClient({ id }: { id: string }) {
 
             {exp.type === "Image" && (
               <>
-                {/* @ts-ignore - A-Frame element */}
                 <a-image
                   src={exp.mediaUrl}
                   width="3"
