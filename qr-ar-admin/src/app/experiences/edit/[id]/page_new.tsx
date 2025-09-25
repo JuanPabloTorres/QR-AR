@@ -97,12 +97,19 @@ export default function EditExperiencePage() {
     setSuccess(false);
 
     try {
+      // Generate QR code URL for the experience
+      const baseUrl =
+        typeof window !== "undefined" ? window.location.origin : "";
+      const qrCodeUrl =
+        experience.qrCodeUrl || `${baseUrl}/ar/${experience.id}`;
+
       const updatedExperience = await updateExperience(experience.id, {
         title,
         type,
         mediaUrl,
         thumbnailUrl,
         isActive,
+        qrCodeUrl,
       });
 
       // Update local state with response

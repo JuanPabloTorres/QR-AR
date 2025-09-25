@@ -1,9 +1,9 @@
 {
-  "/api/experiences/[id]/route": "app/api/experiences/[id]/route.js",
   "/api/experiences/route": "app/api/experiences/route.js",
-  "/experiences/page": "app/experiences/page.js",
-  "/experiences/[id]/page": "app/experiences/[id]/page.js",
+  "/api/experiences/[id]/route": "app/api/experiences/[id]/route.js",
   "/page": "app/page.js",
-  "/experiences/new/page": "app/experiences/new/page.js",
+  "/experiences/[id]/page": "app/experiences/[id]/page.js",
+  "/experiences/page": "app/experiences/page.js",
+  "/experiences/edit/[id]/page": "app/experiences/edit/[id]/page.js",
   "/ar/[id]/page": "app/ar/[id]/page.js"
 }

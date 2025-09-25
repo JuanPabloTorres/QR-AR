@@ -9,11 +9,5 @@ export type Experience = {
   qrCodeUrl?: string; // URL del código QR generado
 };
 
-export type CreateExperienceRequest = Omit<
-  Experience,
-  "id" | "createdAtUtc" | "qrCodeUrl"
->;
-export type UpdateExperienceRequest = Omit<
-  Experience,
-  "id" | "createdAtUtc" | "qrCodeUrl"
->;
+export type CreateExperienceRequest = Omit<Experience, "id" | "createdAtUtc">;
+export type UpdateExperienceRequest = Omit<Experience, "id" | "createdAtUtc">;

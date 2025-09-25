@@ -24,12 +24,18 @@ export default function NewExperiencePage() {
     try {
       const id = generateShortUUID();
 
+      // Generate QR code URL for the experience
+      const baseUrl =
+        typeof window !== "undefined" ? window.location.origin : "";
+      const qrCodeUrl = `${baseUrl}/ar/${id}`;
+
       const exp = await createExperience({
         title,
         type,
         mediaUrl,
         thumbnailUrl,
         isActive,
+        qrCodeUrl,
       });
       setCreatedId(id); // Usamos el ID generado localmente
     } catch (err: any) {
