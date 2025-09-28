@@ -16,29 +16,35 @@ export default function EditExperiencePage() {
     "Video"
   );
   const [mediaUrl, setMediaUrl] = useState("");
+
   const [thumbnailUrl, setThumbnailUrl] = useState("");
+
   const [isActive, setIsActive] = useState(true);
 
   const [error, setError] = useState<string | null>(null);
+
   const [loading, setLoading] = useState(false);
+
   const [success, setSuccess] = useState(false);
+
   const [initialLoading, setInitialLoading] = useState(true);
 
   useEffect(() => {
     const loadExperience = async () => {
       try {
         const exp = await getExperienceById(id);
-        if (!exp) {
+
+        if (!exp || !exp.data) {
           setError("Experience not found");
           return;
         }
 
-        setExperience(exp);
-        setTitle(exp.title);
-        setType(exp.type);
-        setMediaUrl(exp.mediaUrl);
-        setThumbnailUrl(exp.thumbnailUrl || "");
-        setIsActive(exp.isActive);
+        setExperience(exp.data);
+        setTitle(exp.data?.title);
+        setType(exp.data?.type);
+        setMediaUrl(exp.data?.mediaUrl);
+        setThumbnailUrl(exp.data?.thumbnailUrl || "");
+        setIsActive(exp.data?.isActive);
       } catch (err) {
         setError(
           err instanceof Error ? err.message : "Failed to load experience"

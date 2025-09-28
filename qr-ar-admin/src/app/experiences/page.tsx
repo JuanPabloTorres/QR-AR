@@ -173,7 +173,7 @@ export default function ExperiencesPage() {
               Loading experiences...
             </p>
           </div>
-        ) : !data || data.items.length === 0 ? (
+        ) : !data || data.data?.items.length === 0 ? (
           <div className="glass rounded-2xl border border-white/20 p-12 text-center">
             <div className="text-gray-400 mb-6">
               <svg
@@ -219,7 +219,7 @@ export default function ExperiencesPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {data?.items.map((x, index) => (
+            {data.data?.items.map((x, index) => (
               <div
                 key={x.id}
                 className={`group glass rounded-2xl p-6 border border-white/20 hover:border-blue-500/30 transition-all duration-500 hover:scale-105 hover:shadow-2xl hover:shadow-blue-500/10 animate-slideIn`}

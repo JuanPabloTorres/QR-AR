@@ -9,10 +9,87 @@ export default function Navigation() {
   const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
+  // Iconos SVG modernos
+  const HomeIcon = () => (
+    <svg
+      className="w-5 h-5"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="m3 12 2-2m0 0 7-7 7 7M5 10v10a1 1 0 0 0 1 1h3m10-11 2 2m-2-2v10a1 1 0 0 1-1 1h-3m-6 0a1 1 0 0 0 1-1v-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v4a1 1 0 0 0 1 1m-6 0h6"
+      />
+    </svg>
+  );
+
+  const ExperiencesIcon = () => (
+    <svg
+      className="w-5 h-5"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      {/* Cubo 3D isométrico para representar AR/3D */}
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={1.8}
+        d="M12 2l6 4v8l-6 4-6-4V6z"
+      />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={1.8}
+        d="M12 2v12"
+      />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={1.8}
+        d="m6 6 6 4 6-4"
+      />
+      {/* Elementos AR - puntos de tracking */}
+      <circle cx="4" cy="4" r="1" fill="currentColor" opacity="0.6" />
+      <circle cx="20" cy="4" r="1" fill="currentColor" opacity="0.6" />
+      <circle cx="4" cy="20" r="1" fill="currentColor" opacity="0.6" />
+      <circle cx="20" cy="20" r="1" fill="currentColor" opacity="0.6" />
+    </svg>
+  );
+
+  const NewExperienceIcon = () => (
+    <svg
+      className="w-5 h-5"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M12 4.5v15m7.5-7.5h-15"
+      />
+    </svg>
+  );
+
   const navItems = [
-    { href: "/", label: "Home", exact: true },
-    { href: "/experiences", label: "Experiences", exact: false },
-    { href: "/experiences/new", label: "New Experience", exact: true },
+    { href: "/", label: "Home", exact: true, icon: HomeIcon },
+    {
+      href: "/experiences",
+      label: "Experiences",
+      exact: false,
+      icon: ExperiencesIcon,
+    },
+    {
+      href: "/experiences/new",
+      label: "New Experience",
+      exact: true,
+      icon: NewExperienceIcon,
+    },
   ];
 
   const isActive = (href: string, exact: boolean) => {
@@ -79,22 +156,26 @@ export default function Navigation() {
 
           {/* Desktop navigation */}
           <div className="hidden md:flex items-center space-x-2">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`relative px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 transform hover:scale-105 ${
-                  isActive(item.href, item.exact)
-                    ? "bg-gradient-to-r from-blue-600/20 to-purple-600/20 text-blue-700 dark:text-blue-400 shadow-lg shadow-blue-500/25"
-                    : "text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-white/10 dark:hover:bg-white/5"
-                }`}
-              >
-                {isActive(item.href, item.exact) && (
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 to-purple-600/10 rounded-xl animate-pulse"></div>
-                )}
-                <span className="relative z-10">{item.label}</span>
-              </Link>
-            ))}
+            {navItems.map((item) => {
+              const IconComponent = item.icon;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`relative px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 transform hover:scale-105 flex items-center space-x-2 ${
+                    isActive(item.href, item.exact)
+                      ? "bg-gradient-to-r from-blue-600/20 to-purple-600/20 text-blue-700 dark:text-blue-400 shadow-lg shadow-blue-500/25"
+                      : "text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-white/10 dark:hover:bg-white/5"
+                  }`}
+                >
+                  {isActive(item.href, item.exact) && (
+                    <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 to-purple-600/10 rounded-xl animate-pulse"></div>
+                  )}
+                  <IconComponent />
+                  <span className="relative z-10">{item.label}</span>
+                </Link>
+              );
+            })}
 
             {/* Toggle de tema */}
             <div className="ml-2">
@@ -143,33 +224,40 @@ export default function Navigation() {
       >
         <div className="glass-darker border-t border-white/10">
           <div className="px-4 py-6 space-y-2">
-            {navItems.map((item, index) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`block px-4 py-3 rounded-xl text-base font-medium transition-all duration-300 transform hover:scale-105 hover:translate-x-2 ${
-                  isActive(item.href, item.exact)
-                    ? "bg-gradient-to-r from-blue-600/20 to-purple-600/20 text-blue-700 dark:text-blue-400 shadow-lg shadow-blue-500/25"
-                    : "text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-white/10 dark:hover:bg-white/5"
-                }`}
-                onClick={() => setIsMenuOpen(false)}
-                style={{
-                  animationDelay: isMenuOpen ? `${index * 100}ms` : "0ms",
-                  animation: isMenuOpen ? "slideIn 0.3s ease-out forwards" : "",
-                }}
-              >
-                <div className="flex items-center space-x-3">
-                  <div
-                    className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                      isActive(item.href, item.exact)
-                        ? "bg-gradient-to-r from-blue-600 to-purple-600 shadow-lg shadow-blue-500/50"
-                        : "bg-gray-400 dark:bg-gray-600"
-                    }`}
-                  ></div>
-                  <span>{item.label}</span>
-                </div>
-              </Link>
-            ))}
+            {navItems.map((item, index) => {
+              const IconComponent = item.icon;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`block px-4 py-3 rounded-xl text-base font-medium transition-all duration-300 transform hover:scale-105 hover:translate-x-2 ${
+                    isActive(item.href, item.exact)
+                      ? "bg-gradient-to-r from-blue-600/20 to-purple-600/20 text-blue-700 dark:text-blue-400 shadow-lg shadow-blue-500/25"
+                      : "text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-white/10 dark:hover:bg-white/5"
+                  }`}
+                  onClick={() => setIsMenuOpen(false)}
+                  style={{
+                    animationDelay: isMenuOpen ? `${index * 100}ms` : "0ms",
+                    animation: isMenuOpen
+                      ? "slideIn 0.3s ease-out forwards"
+                      : "",
+                  }}
+                >
+                  <div className="flex items-center space-x-3">
+                    <div
+                      className={`flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-300 ${
+                        isActive(item.href, item.exact)
+                          ? "bg-gradient-to-r from-blue-600/30 to-purple-600/30 shadow-lg shadow-blue-500/25"
+                          : "bg-gray-100 dark:bg-gray-800"
+                      }`}
+                    >
+                      <IconComponent />
+                    </div>
+                    <span>{item.label}</span>
+                  </div>
+                </Link>
+              );
+            })}
 
             {/* Theme toggle on mobile */}
             <div className="pt-4 border-t border-white/10 mt-4">

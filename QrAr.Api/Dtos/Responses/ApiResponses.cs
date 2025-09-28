@@ -36,6 +36,12 @@ namespace QrAr.Api.Dtos.Responses
             ApiResponse<object>.ErrorResult("Validation error", message ?? "The request contains invalid data");
 
         /// <summary>
+        /// Validation error response with error details
+        /// </summary>
+        public static ApiResponse<Dictionary<string, string[]>> ValidationError(string? message, Dictionary<string, string[]> errors) =>
+            ApiResponse<Dictionary<string, string[]>>.ErrorResult("Validation error", message ?? "The request contains invalid data", errors);
+
+        /// <summary>
         /// Internal server error response
         /// </summary>
         public static ApiResponse<object> InternalError(string? message = null) =>

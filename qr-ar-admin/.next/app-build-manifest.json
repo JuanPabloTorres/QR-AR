@@ -11,6 +11,11 @@
       "static/chunks/main-app.js",
       "static/chunks/app/page.js"
     ],
+    "/experiences/new/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/experiences/new/page.js"
+    ],
     "/experiences/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
@@ -21,25 +26,15 @@
       "static/chunks/main-app.js",
       "static/chunks/app/api/experiences/route.js"
     ],
-    "/experiences/new/page": [
+    "/experiences/edit/[id]/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/experiences/new/page.js"
-    ],
-    "/experiences/[id]/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/experiences/[id]/page.js"
+      "static/chunks/app/experiences/edit/[id]/page.js"
     ],
     "/api/experiences/[id]/route": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/api/experiences/[id]/route.js"
-    ],
-    "/experiences/edit/[id]/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/experiences/edit/[id]/page.js"
     ]
   }
 }

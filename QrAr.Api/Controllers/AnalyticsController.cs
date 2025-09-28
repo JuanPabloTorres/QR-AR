@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using QrAr.Api.DbContexts;
+using QrAr.Api.Dtos.Responses;
 using QrAr.Api.Models;
+using QrAr.Api.Services;
 
 namespace QrAr.Api.Controllers
 {
@@ -15,49 +17,23 @@ namespace QrAr.Api.Controllers
             app.MapGet("/api/analytics/summary", GetAnalyticsSummary);
         }
 
-        private static async Task<IResult> CreateAnalyticsEvent(string eventName, string id, AppDbContext db)
+        private static async Task<IResult> CreateAnalyticsEvent(string eventName, string id, 
+            IAnalyticsService analyticsService)
         {
-            if (string.IsNullOrWhiteSpace(eventName) || string.IsNullOrWhiteSpace(id))
-                return Results.BadRequest("EventName and ID are required");
+            var success = await analyticsService.CreateEventAsync(eventName, id);
+            
+            if (!success)
+                return Results.BadRequest(ApiResponses.ValidationError("EventName and ID are required"));
 
-            var analyticsEvent = new AnalyticsEvent
-            {
-                ExperienceId = id,
-                EventName = eventName,
-                CreatedAtUtc = DateTime.UtcNow
-            };
-
-            db.Analytics.Add(analyticsEvent);
-
-            await db.SaveChangesAsync();
-
-            return Results.Accepted();
+            return Results.Ok(ApiResponses.Success("Analytics event created successfully"));
         }
 
-        private static async Task<IResult> GetAnalyticsSummary(int days, AppDbContext db)
+        private static async Task<IResult> GetAnalyticsSummary(int days, IAnalyticsService analyticsService)
         {
-            days = days is <= 0 or > 365 ? 30 : days;
+            var summary = await analyticsService.GetSummaryAsync(days);
 
-            var since = DateTime.UtcNow.AddDays(-days);
-
-            var data = await db.Analytics
-                .Where(a => a.CreatedAtUtc >= since)
-                .GroupBy(a => new { a.ExperienceId, a.EventName })
-                .Select(g => new { g.Key.ExperienceId, g.Key.EventName, Count = g.Count() })
-                .ToListAsync();
-
-            // Pivot rápido por experiencia
-            var summary = new Dictionary<string, Dictionary<string, int>>();
-
-            foreach (var record in data)
-            {
-                if (!summary.TryGetValue(record.ExperienceId, out var metrics))
-                    summary[record.ExperienceId] = metrics = new();
-
-                metrics[record.EventName] = record.Count;
-            }
-
-            return Results.Ok(summary);
+            return Results.Ok(ApiResponses.Success(summary, 
+                $"Analytics summary retrieved for the last {days} days"));
         }
     }
 }

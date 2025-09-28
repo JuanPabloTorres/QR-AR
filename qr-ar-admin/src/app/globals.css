@@ -138,6 +138,107 @@ body {
   100% { background-position: calc(200px + 100%) 0; }
 }
 
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.05); }
+}
+
+@keyframes bounce {
+  0%, 20%, 53%, 80%, 100% { transform: translate3d(0,0,0); }
+  40%, 43% { transform: translate3d(0,-15px,0); }
+  70% { transform: translate3d(0,-5px,0); }
+  90% { transform: translate3d(0,-2px,0); }
+}
+
+@keyframes wiggle {
+  0%, 7% { transform: rotateZ(0); }
+  15% { transform: rotateZ(-15deg); }
+  20% { transform: rotateZ(10deg); }
+  25% { transform: rotateZ(-10deg); }
+  30% { transform: rotateZ(6deg); }
+  35% { transform: rotateZ(-4deg); }
+  40%, 100% { transform: rotateZ(0); }
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes particle-float {
+  0% { opacity: 0; transform: translateY(0px) translateX(0px) scale(0); }
+  25% { opacity: 1; transform: translateY(-10px) translateX(-5px) scale(1); }
+  50% { opacity: 0.8; transform: translateY(-20px) translateX(10px) scale(0.8); }
+  75% { opacity: 0.4; transform: translateY(-30px) translateX(-8px) scale(0.6); }
+  100% { opacity: 0; transform: translateY(-40px) translateX(5px) scale(0); }
+}
+
+@keyframes holographic {
+  0%, 100% { 
+    transform: perspective(400px) rotateY(0deg) rotateX(0deg);
+    text-shadow: 0 0 20px rgba(59, 130, 246, 0.5), 0 0 40px rgba(147, 51, 234, 0.3);
+  }
+  25% { 
+    transform: perspective(400px) rotateY(-5deg) rotateX(2deg);
+    text-shadow: 0 0 30px rgba(236, 72, 153, 0.6), 0 0 60px rgba(59, 130, 246, 0.4);
+  }
+  50% { 
+    transform: perspective(400px) rotateY(0deg) rotateX(-2deg);
+    text-shadow: 0 0 25px rgba(147, 51, 234, 0.7), 0 0 50px rgba(236, 72, 153, 0.5);
+  }
+  75% { 
+    transform: perspective(400px) rotateY(5deg) rotateX(2deg);
+    text-shadow: 0 0 35px rgba(59, 130, 246, 0.8), 0 0 70px rgba(147, 51, 234, 0.4);
+  }
+}
+
+@keyframes typing {
+  0% { width: 0; }
+  50% { width: 100%; }
+  100% { width: 100%; }
+}
+
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { 
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.4), 0 0 40px rgba(147, 51, 234, 0.2), 0 0 60px rgba(236, 72, 153, 0.1);
+  }
+  50% { 
+    box-shadow: 0 0 40px rgba(59, 130, 246, 0.8), 0 0 80px rgba(147, 51, 234, 0.6), 0 0 120px rgba(236, 72, 153, 0.4);
+  }
+}
+
+@keyframes float-sparkle {
+  0% { opacity: 0; transform: translateY(20px) translateX(0) scale(0) rotate(0deg); }
+  25% { opacity: 1; transform: translateY(0px) translateX(10px) scale(1) rotate(90deg); }
+  50% { opacity: 0.8; transform: translateY(-20px) translateX(-5px) scale(0.8) rotate(180deg); }
+  75% { opacity: 0.4; transform: translateY(-40px) translateX(8px) scale(0.6) rotate(270deg); }
+  100% { opacity: 0; transform: translateY(-60px) translateX(0) scale(0) rotate(360deg); }
+}
+
+@keyframes text-reveal {
+  0% { 
+    opacity: 0;
+    transform: translateY(30px) scale(0.8);
+    filter: blur(10px);
+  }
+  100% { 
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+
 .animate-fade-in {
   animation: fadeIn 0.3s ease-out;
 }
@@ -148,6 +249,135 @@ body {
 
 .animate-scale-in {
   animation: scaleIn 0.2s ease-out;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-pulse-soft {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.animate-bounce-soft {
+  animation: bounce 2s infinite;
+}
+
+.animate-wiggle {
+  animation: wiggle 2s ease-in-out;
+}
+
+.animate-spin-slow {
+  animation: spin-slow 4s linear infinite;
+}
+
+.hover-float:hover {
+  animation: float 1s ease-in-out infinite;
+}
+
+.hover-pulse:hover {
+  animation: pulse 1s ease-in-out infinite;
+}
+
+.hover-wiggle:hover {
+  animation: wiggle 0.5s ease-in-out;
+}
+
+.animate-holographic {
+  animation: holographic 4s ease-in-out infinite;
+}
+
+.animate-typing {
+  animation: typing 3s steps(5, end) infinite;
+}
+
+.animate-glow-pulse {
+  animation: glow-pulse 1s ease-in-out infinite;
+}
+
+.animate-float-sparkle {
+  animation: float-sparkle 3s ease-in-out infinite;
+}
+
+.animate-text-reveal {
+  animation: text-reveal 1s ease-out;
+}
+
+.hover-holographic:hover {
+  animation: holographic 2s ease-in-out infinite;
+}
+
+.hover-glow:hover {
+  animation: glow-pulse 1s ease-in-out infinite;
+}
+
+/* Animation delay classes */
+.delay-500 {
+  animation-delay: 0.5s;
+}
+
+.delay-1000 {
+  animation-delay: 1s;
+}
+
+.delay-1500 {
+  animation-delay: 1.5s;
+}
+
+.delay-2000 {
+  animation-delay: 2s;
+}
+
+.delay-200 {
+  animation-delay: 0.2s;
+}
+
+.delay-300 {
+  animation-delay: 0.3s;
+}
+
+.delay-400 {
+  animation-delay: 0.4s;
+}
+
+/* Custom gentle breathing effects */
+@keyframes gentle-breathe {
+  0%, 100% { 
+    opacity: 0.7;
+    transform: scale(1);
+  }
+  50% { 
+    opacity: 1;
+    transform: scale(1.01);
+  }
+}
+
+@keyframes subtle-glow {
+  0%, 100% { 
+    opacity: 0.8;
+    text-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
+  }
+  50% { 
+    opacity: 0.95;
+    text-shadow: 0 0 15px rgba(147, 51, 234, 0.4);
+  }
+}
+
+@keyframes cursor-fade {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.9; }
+}
+
+.animate-gentle-breathe {
+  animation: gentle-breathe 6s ease-in-out infinite;
+}
+
+.animate-subtle-glow {
+  animation: subtle-glow 8s ease-in-out infinite;
+}
+
+.animate-cursor-fade {
+  animation: cursor-fade 4s ease-in-out infinite;
 }
 
 .shimmer {

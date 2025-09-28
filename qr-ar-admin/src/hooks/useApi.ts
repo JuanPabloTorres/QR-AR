@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Experience } from "@/types/experience";
-import { PaginatedResponse } from "@/types/api";
+import { ApiResponse, PaginatedResponse } from "@/types/api";
 import {
   listExperiences,
   getExperienceById,
@@ -18,15 +18,20 @@ export function useExperiences(params?: {
   pageSize?: number;
   onlyActive?: boolean;
 }) {
-  const [data, setData] = useState<PaginatedResponse<Experience> | null>(null);
+  const [data, setData] = useState<ApiResponse<
+    PaginatedResponse<Experience>
+  > | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchExperiences = async () => {
     try {
       setLoading(true);
+
       setError(null);
+
       const result = await listExperiences(params);
+
       setData(result);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error desconocido");

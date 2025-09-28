@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 
 import { Experience } from "@/types/experience";
 
+import { ApiResponse } from "@/types/api";
+
 function useMindArScripts() {
   const [ready, setReady] = useState(false);
 
@@ -121,18 +123,25 @@ export default function ArClient({ id }: { id: string }) {
 
     // Get experience from API only
     const url = `/api/experiences/${encodeURIComponent(id)}`;
+
     setStatus("Loading experience…");
+
     fetch(url, { headers: { Accept: "application/json" }, cache: "no-store" })
       .then(async (r) => {
         if (!r.ok) throw new Error(`${r.status} ${await r.text()}`);
+
         const ct = r.headers.get("content-type") ?? "";
+
         if (!ct.includes("application/json"))
           throw new Error("Non-JSON response");
+
         return r.json();
       })
-      .then((data: Experience) => {
-        if (!data.isActive) throw new Error("Inactive experience");
-        setExp(data);
+      .then((data: ApiResponse<Experience>) => {
+        if (!data.data?.isActive) throw new Error("Inactive experience");
+
+        setExp(data.data);
+
         console.log("Using API experience:", data);
       })
       .catch((e) => {

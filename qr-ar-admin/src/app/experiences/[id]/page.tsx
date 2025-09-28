@@ -21,12 +21,16 @@ export default function ExperiencePage() {
 
       try {
         setLoading(true);
+
         const exp = await getExperienceById(id);
-        if (!exp) {
+
+        if (!exp?.success || !exp.data) {
           setError("Experience not found");
+
           return;
         }
-        setExperience(exp);
+
+        setExperience(exp.data);
       } catch (err) {
         setError(
           err instanceof Error ? err.message : "Failed to load experience"

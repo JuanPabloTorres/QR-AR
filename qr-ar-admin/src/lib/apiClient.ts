@@ -75,7 +75,7 @@ export async function listExperiences(params?: {
   page?: number;
   pageSize?: number;
   onlyActive?: boolean;
-}): Promise<PaginatedResponse<Experience>> {
+}): Promise<ApiResponse<PaginatedResponse<Experience>>> {
   const queryParams = new URLSearchParams();
 
   if (params?.search) queryParams.set("search", params.search);
@@ -87,14 +87,14 @@ export async function listExperiences(params?: {
   const endpoint = `/experiences${
     queryParams.toString() ? `?${queryParams.toString()}` : ""
   }`;
-  return apiRequest<PaginatedResponse<Experience>>(endpoint);
+  return apiRequest<ApiResponse<PaginatedResponse<Experience>>>(endpoint);
 }
 
 export async function getExperienceById(
   id: string
-): Promise<Experience | null> {
+): Promise<ApiResponse<Experience> | null> {
   try {
-    return await apiRequest<Experience>(
+    return await apiRequest<ApiResponse<Experience>>(
       `/experiences/${encodeURIComponent(id)}`
     );
   } catch (error) {

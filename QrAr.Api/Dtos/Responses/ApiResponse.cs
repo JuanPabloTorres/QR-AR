@@ -28,5 +28,11 @@ namespace QrAr.Api.Dtos.Responses
         /// </summary>
         public static ApiResponse<T> ErrorResult(string error, string? message = null) =>
             new() { Success = false, Error = error, Message = message };
+
+        /// <summary>
+        /// Creates an error response for array or list of errors
+        /// </summary>
+        public static ApiResponse<T> ErrorResult(string error, string? message, T errors) =>
+            new() { Success = false, Error = error, Message = message, Data = errors };
     }
 }
