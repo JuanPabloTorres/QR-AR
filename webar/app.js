@@ -56,6 +56,53 @@ async function fetchExperience(id){
   return res.json();
 }
 
+// Nueva función para crear Blob URLs desde datos Base64
+function createBlobUrl(base64Data, mimeType) {
+  if (!base64Data) return null;
+  
+  try {
+    const binaryString = atob(base64Data);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    const blob = new Blob([bytes], { type: mimeType });
+    return URL.createObjectURL(blob);
+  } catch (error) {
+    console.error('Error creating blob URL:', error);
+    return null;
+  }
+}
+
+// Función para obtener la URL de media adecuada
+function getMediaUrl(experience) {
+  // Si hay modelData (Base64), crear un Blob URL
+  if (experience.modelData) {
+    let mimeType = "application/octet-stream";
+    
+    if (experience.type === "Video") {
+      mimeType = "video/mp4";
+    } else if (experience.type === "Image") {
+      mimeType = "image/jpeg";
+    } else if (experience.type === "Model3D") {
+      if (experience.modelFormat?.toLowerCase() === "glb") {
+        mimeType = "model/gltf-binary";
+      } else if (experience.modelFormat?.toLowerCase() === "gltf") {
+        mimeType = "model/gltf+json";
+      }
+    }
+    
+    const blobUrl = createBlobUrl(experience.modelData, mimeType);
+    if (blobUrl) {
+      console.log('[getMediaUrl] Created blob URL for experience:', blobUrl);
+      return blobUrl;
+    }
+  }
+  
+  // Fallback a mediaUrl si no hay modelData o falla la conversión
+  console.log('[getMediaUrl] Using mediaUrl fallback:', experience.mediaUrl);
+  return experience.mediaUrl;
+}
 
 function addVideoOnMarker(url){
   const root = document.querySelector('#markerRoot');
@@ -111,40 +158,57 @@ function addTestCube() {
 
 async function main(){
   try{
-
-    console.log('DEBUG href=', location.href, 'pathname=', location.pathname);
-
+    console.log('[main] DEBUG href=', location.href, 'pathname=', location.pathname);
 
     const id = getIdFromPath();
     if(!id) throw new Error('ExperienceId inválido');
     statusEl.textContent = `Cargando ${id}…`;
 
     const exp = await fetchExperience(id);
-
- 
-   
+    console.log('[main] Experience loaded:', exp);
+    console.log('[main] Has modelData:', !!exp.modelData);
+    console.log('[main] ModelData type:', typeof exp.modelData);
 
     if(!exp.isActive) throw new Error('Experiencia inactiva');
 
     // Analítica MVP
     fetch(`${API_BASE}/api/analytics/view-started/${encodeURIComponent(id)}`, { method:'POST' });
 
+    // Obtener la URL correcta (desde Base64 o mediaUrl)
+    const mediaUrl = getMediaUrl(exp);
+    console.log('[main] Using media URL:', mediaUrl);
+
     if (exp.type === 'Video') {
-      addVideoOnMarker(exp.mediaUrl);
-      statusEl.textContent = 'Video listo — apunta al marcador "hiro"';
+      if (mediaUrl) {
+        addVideoOnMarker(mediaUrl);
+        statusEl.textContent = 'Video listo — apunta al marcador "hiro"';
+      } else {
+        throw new Error('No se pudo cargar el video');
+      }
     } else if (exp.type === 'Model3D') {
-      addModelOnMarker(exp.mediaUrl);
-      statusEl.textContent = 'Modelo listo — apunta al marcador "hiro"';
+      if (mediaUrl) {
+        addModelOnMarker(mediaUrl);
+        statusEl.textContent = 'Modelo 3D listo — apunta al marcador "hiro"';
+      } else {
+        throw new Error('No se pudo cargar el modelo 3D');
+      }
     } else if (exp.type === 'Image') {
-      addImageOnMarker(exp.mediaUrl);
-      statusEl.textContent = 'Imagen lista — apunta al marcador "hiro"';
+      if (mediaUrl) {
+        addImageOnMarker(mediaUrl);
+        statusEl.textContent = 'Imagen lista — apunta al marcador "hiro"';
+      } else {
+        throw new Error('No se pudo cargar la imagen');
+      }
     } else {
+      // Message type
       const root = document.querySelector('#markerRoot');
       const t = document.createElement('a-text');
       t.setAttribute('value', exp.title || 'Mensaje');
       t.setAttribute('align', 'center');
       t.setAttribute('position', '0 0 0');
       t.setAttribute('rotation', '-90 0 0');
+      t.setAttribute('color', '#ffffff');
+      t.setAttribute('scale', '2 2 2');
       root.appendChild(t);
       statusEl.textContent = 'Mensaje listo — apunta al marcador "hiro"';
     }
@@ -155,6 +219,7 @@ async function main(){
   } catch (err) {
     statusEl.textContent = `Error: ${err.message || err}`;
     statusEl.classList.add('error');
+    console.error('[main] AR Error:', err);
   }
 }
 

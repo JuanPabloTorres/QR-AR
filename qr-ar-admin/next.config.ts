@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Move serverComponentsExternalPackages to the correct location
+  // ✅ CONFIGURACIÓN PARA ARCHIVOS 3D GRANDES
   serverExternalPackages: [],
 
   // API configuration for CORS during development
@@ -20,7 +20,20 @@ const nextConfig: NextConfig = {
             value:
               "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version",
           },
+          // ✅ Headers adicionales para archivos grandes
+          { key: "Connection", value: "keep-alive" },
+          { key: "Keep-Alive", value: "timeout=60" },
         ],
+      },
+    ];
+  },
+
+  // API Proxy para desarrollo
+  async rewrites() {
+    return [
+      {
+        source: "/api/:path*",
+        destination: "http://localhost:5000/api/:path*", // Proxy a la API .NET
       },
     ];
   },

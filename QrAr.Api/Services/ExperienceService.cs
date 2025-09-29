@@ -78,6 +78,12 @@ public class ExperienceService : IExperienceService
         experience.MediaUrl = dto.MediaUrl;
         experience.ThumbnailUrl = dto.ThumbnailUrl;
         experience.IsActive = dto.IsActive;
+        
+        // ✅ MAPEAR NUEVOS CAMPOS DE MODELOS 3D
+        experience.ModelData = dto.ModelData;
+        experience.ModelFormat = dto.ModelFormat;
+        experience.ModelSize = dto.ModelSize;
+        experience.ModelFileName = dto.ModelFileName;
 
         await _context.SaveChangesAsync();
 
@@ -100,14 +106,50 @@ public class ExperienceService : IExperienceService
     {
         var errors = new Dictionary<string, string[]>();
 
+        // Validación básica
         if (string.IsNullOrWhiteSpace(dto.Title))
-            errors["title"] = ["Requerido"];
+            errors["title"] = ["Título es requerido"];
 
         if (string.IsNullOrWhiteSpace(dto.Type) || !(dto.Type is "Video" or "Model3D" or "Message" or "Image"))
-            errors["type"] = ["Debe ser Video | Model3D | Message | Image"];
+            errors["type"] = ["El tipo debe ser Video, Model3D, Message o Image"];
 
-        if (string.IsNullOrWhiteSpace(dto.MediaUrl) || !Uri.IsWellFormedUriString(dto.MediaUrl, UriKind.Absolute))
-            errors["mediaUrl"] = ["URL inv�lida"];
+        // ✅ VALIDACIÓN ESPECÍFICA PARA MODELOS 3D
+        if (dto.Type == "Model3D")
+        {
+            if (string.IsNullOrWhiteSpace(dto.ModelData))
+                errors["modelData"] = ["Los datos del modelo 3D son requeridos"];
+            
+            if (string.IsNullOrWhiteSpace(dto.ModelFormat))
+                errors["modelFormat"] = ["El formato del modelo 3D es requerido"];
+                
+            if (string.IsNullOrWhiteSpace(dto.ModelFileName))
+                errors["modelFileName"] = ["El nombre del archivo del modelo 3D es requerido"];
+
+            // Validar formato soportado
+            if (!string.IsNullOrWhiteSpace(dto.ModelFormat))
+            {
+                var supportedFormats = new[] { "gltf", "glb", "fbx", "obj" };
+                if (!supportedFormats.Contains(dto.ModelFormat.ToLower()))
+                    errors["modelFormat"] = ["Formato no soportado. Use: gltf, glb, fbx, obj"];
+            }
+        }
+        else
+        {
+            // Para tipos Video e Image, MediaUrl es requerida
+            if (dto.Type is "Video" or "Image")
+            {
+                if (string.IsNullOrWhiteSpace(dto.MediaUrl))
+                    errors["mediaUrl"] = ["La URL del medio es requerida para este tipo"];
+                else if (!Uri.IsWellFormedUriString(dto.MediaUrl, UriKind.Absolute))
+                    errors["mediaUrl"] = ["La URL del medio no es válida"];
+            }
+            // Para Message, MediaUrl es opcional
+            else if (dto.Type == "Message")
+            {
+                if (!string.IsNullOrWhiteSpace(dto.MediaUrl) && !Uri.IsWellFormedUriString(dto.MediaUrl, UriKind.Absolute))
+                    errors["mediaUrl"] = ["La URL del medio no es válida"];
+            }
+        }
 
         return Task.FromResult(errors);
     }

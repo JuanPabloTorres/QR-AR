@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 import { Experience } from "@/types/experience";
 
@@ -57,15 +57,11 @@ function useMindArScripts() {
 
         await addScript("https://aframe.io/releases/1.4.2/aframe.min.js");
 
-        // Wait for AFRAME to be available
-        let attempts = 0;
-        while (!(window as any).AFRAME && attempts < 50) {
-          await new Promise((resolve) => setTimeout(resolve, 100));
-          attempts++;
-        }
+        // Wait briefly for AFRAME to be available
+        await new Promise((resolve) => setTimeout(resolve, 500));
 
         if (!(window as any).AFRAME) {
-          throw new Error("AFRAME failed to load correctly");
+          throw new Error("AFRAME failed to load");
         }
 
         await addCss("/ar-styles.css");
@@ -74,15 +70,11 @@ function useMindArScripts() {
           "https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"
         );
 
-        // Wait for MINDAR to be available
-        attempts = 0;
-        while (!(window as any).MINDAR && attempts < 50) {
-          await new Promise((resolve) => setTimeout(resolve, 100));
-          attempts++;
-        }
+        // Wait briefly for MINDAR to be available
+        await new Promise((resolve) => setTimeout(resolve, 500));
 
         if (!(window as any).MINDAR) {
-          throw new Error("MINDAR failed to load correctly");
+          throw new Error("MINDAR failed to load");
         }
 
         console.log("✓ All MindAR scripts loaded successfully");
@@ -115,7 +107,44 @@ export default function ArClient({ id }: { id: string }) {
   const [exp, setExp] = useState<Experience | null>(null);
   const [modelLoaded, setModelLoaded] = useState(false);
   const [modelError, setModelError] = useState<string>("");
+  const [mediaUrl, setMediaUrl] = useState<string>("");
   const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  // Helper function to convert base64 to blob URL
+  const createBlobUrl = (base64Data: string, mimeType: string): string => {
+    try {
+      console.log(
+        "[AR] Creating blob URL, data length:",
+        base64Data.length,
+        "MIME:",
+        mimeType
+      );
+
+      // Clean base64 data - remove any data URL prefix if present
+      const cleanBase64 = base64Data.replace(/^data:[^;]+;base64,/, "");
+      console.log("[AR] Cleaned base64 length:", cleanBase64.length);
+
+      const byteCharacters = atob(cleanBase64);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: mimeType });
+      const blobUrl = URL.createObjectURL(blob);
+
+      console.log("[AR] Blob created:", {
+        size: blob.size,
+        type: blob.type,
+        url: blobUrl,
+      });
+
+      return blobUrl;
+    } catch (error) {
+      console.error("[AR] Error creating blob URL:", error);
+      return "";
+    }
+  };
 
   // Fetch experience
   useEffect(() => {
@@ -149,6 +178,64 @@ export default function ArClient({ id }: { id: string }) {
         setError(e?.message || String(e));
       });
   }, [id]);
+
+  // Process experience data and create media URL
+  useEffect(() => {
+    if (!exp) {
+      setMediaUrl("");
+      return;
+    }
+
+    console.log("Processing experience data:", exp);
+    console.log("Model data available:", !!exp.modelData);
+    console.log("Media URL:", exp.mediaUrl);
+
+    // If we have modelData (base64), convert it to blob URL
+    if (exp.modelData) {
+      let mimeType = "";
+
+      // Determine MIME type based on experience type and format
+      if (exp.type === "Model3D") {
+        if (exp.modelFormat?.toLowerCase() === "glb") {
+          mimeType = "model/gltf-binary";
+        } else if (exp.modelFormat?.toLowerCase() === "gltf") {
+          mimeType = "model/gltf+json";
+        } else {
+          mimeType = "application/octet-stream";
+        }
+      } else if (exp.type === "Image") {
+        mimeType = "image/jpeg"; // Default, could be improved
+      } else if (exp.type === "Video") {
+        mimeType = "video/mp4"; // Default, could be improved
+      }
+
+      if (mimeType) {
+        const blobUrl = createBlobUrl(exp.modelData, mimeType);
+        if (blobUrl) {
+          setMediaUrl(blobUrl);
+          console.log("Created blob URL for AR:", blobUrl);
+          console.log("Model format:", exp.modelFormat, "MIME type:", mimeType);
+        } else {
+          console.warn("Failed to create blob URL, falling back to mediaUrl");
+          setMediaUrl(exp.mediaUrl || "");
+        }
+      } else {
+        console.log("No MIME type determined, using mediaUrl:", exp.mediaUrl);
+        setMediaUrl(exp.mediaUrl || "");
+      }
+    } else {
+      // No base64 data, use regular mediaUrl
+      console.log("No model data, using mediaUrl:", exp.mediaUrl);
+      setMediaUrl(exp.mediaUrl || "");
+    }
+
+    // Cleanup function to revoke blob URLs
+    return () => {
+      if (mediaUrl && mediaUrl.startsWith("blob:")) {
+        URL.revokeObjectURL(mediaUrl);
+      }
+    };
+  }, [exp]);
 
   // Autoplay helper
   useEffect(() => {
@@ -189,133 +276,49 @@ export default function ArClient({ id }: { id: string }) {
     };
   }, [scriptsReady]);
 
-  // Manejo específico de modelos 3D
+  // Manejo básico de modelos 3D
   useEffect(() => {
     if (!scriptsReady || !exp || exp.type !== "Model3D") return;
 
     const scene = document.querySelector("a-scene");
     if (!scene) return;
 
-    // Interceptar y silenciar errores de THREE.js de NaN
-    const originalConsoleError = console.error;
-    const filteredConsoleError = (...args: any[]) => {
-      const message = args.join(" ");
-      // Filtrar errores conocidos de geometría que no afectan la funcionalidad
-      if (
-        message.includes("computeBoundingSphere") &&
-        message.includes("NaN")
-      ) {
-        console.warn(
-          "[AR] Geometría con valores NaN detectada, pero el modelo puede seguir funcionando:",
-          ...args
-        );
-        return;
-      }
-      originalConsoleError.apply(console, args);
-    };
-    console.error = filteredConsoleError;
-
     const onModelLoaded = (e: any) => {
-      console.log("[AR] Model loaded successfully", e);
-
-      try {
-        // Validar el modelo cargado de manera más tolerante
-        const model = e.target;
-        const object3D = model.getObject3D("mesh");
-
-        if (object3D) {
-          // Reparar geometría si es posible
-          object3D.traverse((child: any) => {
-            if (child.geometry) {
-              try {
-                // Intentar computar bounding box y sphere de manera segura
-                if (
-                  child.geometry.attributes &&
-                  child.geometry.attributes.position
-                ) {
-                  const positions = child.geometry.attributes.position.array;
-
-                  // Verificar si hay valores válidos
-                  let hasValidPositions = false;
-                  for (let i = 0; i < positions.length; i += 3) {
-                    if (
-                      isFinite(positions[i]) &&
-                      isFinite(positions[i + 1]) &&
-                      isFinite(positions[i + 2])
-                    ) {
-                      hasValidPositions = true;
-                      break;
-                    }
-                  }
-
-                  if (hasValidPositions) {
-                    child.geometry.computeBoundingBox();
-                    child.geometry.computeBoundingSphere();
-                  } else {
-                    console.warn(
-                      "[AR] Geometría con posiciones inválidas, usando valores por defecto"
-                    );
-                    // Crear bounding sphere por defecto
-                    child.geometry.boundingSphere = {
-                      center: { x: 0, y: 0, z: 0 },
-                      radius: 1,
-                    };
-                  }
-                }
-              } catch (geomError) {
-                console.warn(
-                  "[AR] Error al procesar geometría, continuando:",
-                  geomError
-                );
-              }
-            }
-          });
-        }
-
-        setModelLoaded(true);
-        setModelError("");
-        setStatus("🎯 Ti-pche cargado - ¡Explora en AR!");
-
-        // Ocultar indicador de carga
-        const loadingIndicator = scene.querySelector("#loadingIndicator");
-        if (loadingIndicator) {
-          loadingIndicator.setAttribute("visible", "false");
-        }
-      } catch (error) {
-        console.warn(
-          "[AR] Error durante la validación, pero el modelo puede funcionar:",
-          error
-        );
-        // No marcar como error crítico si el modelo se cargó visualmente
-        setModelLoaded(true);
-        setStatus("🎯 Ti-pche cargado (con advertencias)");
-
-        const loadingIndicator = scene.querySelector("#loadingIndicator");
-        if (loadingIndicator) {
-          loadingIndicator.setAttribute("visible", "false");
-        }
-      }
+      console.log("[AR] Model loaded successfully");
+      setModelLoaded(true);
+      setModelError("");
+      setStatus("🎯 Modelo 3D cargado - ¡Explora en AR!");
     };
 
     const onModelError = (e: any) => {
       console.error("[AR] Model loading error", e);
-      setModelError("Error cargando el modelo Ti-pche");
-      setStatus("❌ Error cargando modelo Ti-pche");
+      console.error("[AR] Model URL:", mediaUrl);
+      console.error("[AR] Model URL type:", typeof mediaUrl);
+      console.error(
+        "[AR] Model URL starts with blob:",
+        mediaUrl?.startsWith("blob:")
+      );
+      console.error("[AR] Experience data:", exp);
+      console.error("[AR] Model format:", exp?.modelFormat);
+      console.error("[AR] Model size:", exp?.modelSize);
+      console.error("[AR] Error details:", e?.detail || e?.error || e);
 
-      // Ocultar indicador de carga
-      const loadingIndicator = scene.querySelector("#loadingIndicator");
-      if (loadingIndicator) {
-        loadingIndicator.setAttribute("visible", "false");
+      // Try to get more specific error information
+      let errorMsg = "Unknown error";
+      if (e?.detail?.message) {
+        errorMsg = e.detail.message;
+      } else if (e?.error?.message) {
+        errorMsg = e.error.message;
+      } else if (e?.message) {
+        errorMsg = e.message;
+      } else if (typeof e === "string") {
+        errorMsg = e;
       }
+
+      console.error("[AR] Final error message:", errorMsg);
+      setModelError(`Error cargando modelo: ${errorMsg}`);
+      setStatus("❌ Error cargando modelo 3D - Check console for details");
     };
-
-    // Mostrar indicador de carga para modelos
-    setTimeout(() => {
-      const loadingIndicator = scene.querySelector("#loadingIndicator");
-      if (loadingIndicator && !modelLoaded) {
-        loadingIndicator.setAttribute("visible", "true");
-      }
-    }, 1000);
 
     const model = scene.querySelector("[gltf-model]");
     if (model) {
@@ -324,15 +327,12 @@ export default function ArClient({ id }: { id: string }) {
     }
 
     return () => {
-      // Restaurar console.error original
-      console.error = originalConsoleError;
-
       if (model) {
         model.removeEventListener("model-loaded", onModelLoaded);
         model.removeEventListener("model-error", onModelError);
       }
     };
-  }, [scriptsReady, exp, modelLoaded]);
+  }, [scriptsReady, exp]);
 
   return (
     <>
@@ -416,11 +416,25 @@ export default function ArClient({ id }: { id: string }) {
             {exp.type === "Model3D" && (
               <>
                 {/* Verificar URL válida antes de cargar */}
-                {exp.mediaUrl && exp.mediaUrl.trim() !== "" ? (
+                {mediaUrl && mediaUrl.trim() !== "" ? (
                   <>
-                    {/* Modelo Ti-pche con configuración específica */}
+                    {/* Debug info */}
+                    <a-text
+                      value={`Debug: ${
+                        mediaUrl.startsWith("blob:")
+                          ? "BLOB URL"
+                          : "REGULAR URL"
+                      }`}
+                      position="0 2 0"
+                      align="center"
+                      color="#00ff00"
+                      scale="0.5 0.5 0.5"
+                    ></a-text>
+
+                    {/* Modelo 3D con configuración específica */}
+                    {console.log("[AR] Rendering model with URL:", mediaUrl)}
                     <a-entity
-                      gltf-model={exp.mediaUrl}
+                      gltf-model={mediaUrl}
                       position="0 -0.2 0"
                       rotation="0 0 0"
                       scale="1.5 1.5 1.5"
@@ -462,13 +476,25 @@ export default function ArClient({ id }: { id: string }) {
                   </>
                 ) : (
                   /* Mensaje de error si no hay URL válida */
-                  <a-text
-                    value="❌ URL de modelo no válida"
-                    position="0 0 0"
-                    align="center"
-                    color="#ff4444"
-                    scale="1.2 1.2 1.2"
-                  ></a-text>
+                  <>
+                    <a-text
+                      value="❌ URL de modelo no válida"
+                      position="0 0 0"
+                      align="center"
+                      color="#ff4444"
+                      scale="1.2 1.2 1.2"
+                    ></a-text>
+
+                    {/* Cubo de fallback - usando createElement para evitar TypeScript */}
+                    {React.createElement("a-box", {
+                      position: "0 0 0",
+                      rotation: "0 45 0",
+                      scale: "0.5 0.5 0.5",
+                      color: "#ff6600",
+                      animation:
+                        "property: rotation; to: 0 405 0; loop: true; dur: 5000",
+                    })}
+                  </>
                 )}
 
                 {/* Información del modelo */}
@@ -490,37 +516,6 @@ export default function ArClient({ id }: { id: string }) {
                     align="center"
                     color="#ff6666"
                     scale="0.9 0.9 0.9"
-                  ></a-text>
-                )}
-
-                {/* Controles de interacción específicos para Ti-pche */}
-                <a-text
-                  value="🏺 Explora la vasija Ti-pche • � Toca para ver detalles"
-                  position="0 -2.2 0"
-                  align="center"
-                  color="#DAA520"
-                  scale="0.8 0.8 0.8"
-                ></a-text>
-
-                {/* Indicador de carga mejorado */}
-                <a-ring
-                  position="0 1.5 0"
-                  radius-inner="0.1"
-                  radius-outer="0.15"
-                  color="#ffaa00"
-                  animation="property: rotation; to: 0 0 360; loop: true; dur: 1000"
-                  visible="false"
-                  id="loadingIndicator"
-                ></a-ring>
-
-                {/* Información de debug (solo en desarrollo) */}
-                {process.env.NODE_ENV === "development" && (
-                  <a-text
-                    value={`Debug: ${exp.mediaUrl}`}
-                    position="0 -2.8 0"
-                    align="center"
-                    color="#666666"
-                    scale="0.6 0.6 0.6"
                   ></a-text>
                 )}
               </>

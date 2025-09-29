@@ -2,6 +2,8 @@
 import { useState } from "react";
 import { createExperience } from "@/lib/apiClient";
 import { generateShortUUID } from "@/utils/uuid";
+import { Model3DUtils } from "@/utils/Model3DUtils";
+import { Model3DFile, getModelFormatFromExtension } from "@/types/experience";
 import Link from "next/link";
 
 export default function NewExperiencePage() {
@@ -14,10 +16,95 @@ export default function NewExperiencePage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  // Estados para archivos 3D
+  const [model3DFile, setModel3DFile] = useState<Model3DFile | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [dragActive, setDragActive] = useState(false);
+  const [fileError, setFileError] = useState<string | null>(null);
+  const [fileProcessing, setFileProcessing] = useState(false);
+
+  // Funciones para manejar archivos 3D
+  const handleFileSelect = async (file: File) => {
+    setFileError(null);
+    setFileProcessing(true);
+
+    try {
+      // Validar formato
+      const format = getModelFormatFromExtension(file.name);
+      if (!format) {
+        throw new Error(
+          `Formato de archivo no soportado: ${file.name.split(".").pop()}`
+        );
+      }
+
+      // Validar tamaño (50MB máximo)
+      if (!Model3DUtils.validateFileSize(file.size, 50)) {
+        throw new Error(
+          "El archivo es demasiado grande. Máximo 50MB permitidos."
+        );
+      }
+
+      // Procesar archivo
+      const model3DFile = await Model3DUtils.fileToModel3DFile(file);
+
+      setModel3DFile(model3DFile);
+      setSelectedFile(file);
+      setMediaUrl(`/models/${file.name}`); // URL temporal para la base de datos
+    } catch (err: any) {
+      setFileError(err.message);
+      setModel3DFile(null);
+      setSelectedFile(null);
+      setMediaUrl("");
+    } finally {
+      setFileProcessing(false);
+    }
+  };
+
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      handleFileSelect(files[0]);
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      handleFileSelect(files[0]);
+    }
+  };
+
+  const clearFile = () => {
+    setModel3DFile(null);
+    setSelectedFile(null);
+    setFileError(null);
+    setMediaUrl("");
+  };
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
 
     setError(null);
+
+    // Validar que si es tipo Model3D, debe tener un archivo
+    if (type === "Model3D" && !model3DFile) {
+      setError("Debes seleccionar un archivo 3D para este tipo de experiencia");
+      return;
+    }
 
     setLoading(true);
 
@@ -26,17 +113,34 @@ export default function NewExperiencePage() {
 
       // Generate QR code URL for the experience
       const baseUrl =
-        typeof window !== "undefined" ? window.location.origin : "";
-      const qrCodeUrl = `${baseUrl}/ar/${id}`;
+        typeof window !== "undefined"
+          ? window.location.origin
+          : "https://localhost:3000";
+      const experienceUrl = `${baseUrl}/ar/${id}`;
+      const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(
+        experienceUrl
+      )}`;
 
-      const exp = await createExperience({
+      // Crear objeto de experiencia base
+      const experienceData: any = {
         title,
         type,
         mediaUrl,
         thumbnailUrl,
         isActive,
         qrCodeUrl,
-      });
+      };
+
+      // Add 3D model data if necessary
+      if (type === "Model3D" && model3DFile) {
+        // model3DFile.data is already base64 encoded string, so use it directly
+        experienceData.modelData = model3DFile.data;
+        experienceData.modelFormat = model3DFile.format;
+        experienceData.modelSize = model3DFile.size;
+        experienceData.modelFileName = model3DFile.fileName;
+      }
+
+      const exp = await createExperience(experienceData);
       setCreatedId(id); // Usamos el ID generado localmente
     } catch (err: any) {
       setError(err.message || "Error creating experience");
@@ -147,6 +251,11 @@ export default function NewExperiencePage() {
                 setThumbnailUrl("");
                 setType("Video");
                 setIsActive(true);
+                // Limpiar campos de modelo 3D
+                setModel3DFile(null);
+                setSelectedFile(null);
+                setFileError(null);
+                setFileProcessing(false);
               }}
               className="group glass px-6 py-3 text-gray-700 dark:text-gray-300 font-semibold rounded-xl transition-all duration-300 hover:scale-105 border border-white/20 hover:border-green-500/50"
             >
@@ -264,16 +373,26 @@ export default function NewExperiencePage() {
               className="block text-sm font-semibold text-gray-700 dark:text-gray-300"
             >
               Multimedia content URL
+              {type === "Model3D" && model3DFile && (
+                <span className="text-green-600 ml-2 text-xs">
+                  (Auto-filled from uploaded file)
+                </span>
+              )}
             </label>
             <div className="relative">
               <input
                 id="mediaUrl"
                 type="text"
-                className="w-full px-4 py-4 glass-input rounded-xl border border-white/20 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/25 transition-all duration-300 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                className={`w-full px-4 py-4 glass-input rounded-xl border border-white/20 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/25 transition-all duration-300 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 ${
+                  type === "Model3D" && model3DFile
+                    ? "bg-gray-100/50 dark:bg-gray-800/50"
+                    : ""
+                }`}
                 value={mediaUrl}
                 onChange={(e) => setMediaUrl(e.target.value)}
                 placeholder="https://example.com/my-content or /models/model.glb"
-                required
+                required={type !== "Model3D" || !model3DFile}
+                disabled={type === "Model3D" && !!model3DFile}
               />
               <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-600/0 to-purple-600/0 hover:from-blue-600/5 hover:to-purple-600/5 transition-all duration-300 pointer-events-none"></div>
             </div>
@@ -291,10 +410,197 @@ export default function NewExperiencePage() {
                   d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                 />
               </svg>
-              URL or path of the video, 3D model or content (e.g.,
-              https://example.com/model.glb or /models/model.glb)
+              {type === "Model3D" && model3DFile
+                ? "URL is automatically set when you upload a 3D file"
+                : "URL or path of the video, 3D model or content (e.g., https://example.com/model.glb or /models/model.glb)"}
             </p>
           </div>
+
+          {/* 3D Model File Upload - Solo aparece cuando type es Model3D */}
+          {type === "Model3D" && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                  Upload 3D Model File
+                </label>
+                {selectedFile && (
+                  <button
+                    type="button"
+                    onClick={clearFile}
+                    className="text-sm text-red-500 hover:text-red-600 transition-colors"
+                  >
+                    Clear file
+                  </button>
+                )}
+              </div>
+
+              {/* Drag and Drop Area */}
+              <div
+                className={`relative border-2 border-dashed rounded-xl p-8 transition-all duration-300 ${
+                  dragActive
+                    ? "border-blue-500 bg-blue-50/50 dark:bg-blue-900/20"
+                    : selectedFile
+                    ? "border-green-500 bg-green-50/50 dark:bg-green-900/20"
+                    : fileError
+                    ? "border-red-500 bg-red-50/50 dark:bg-red-900/20"
+                    : "border-gray-300 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-500"
+                } glass`}
+                onDragEnter={handleDrag}
+                onDragLeave={handleDrag}
+                onDragOver={handleDrag}
+                onDrop={handleDrop}
+              >
+                <input
+                  type="file"
+                  title="Upload 3D model file"
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  onChange={handleInputChange}
+                  accept=".gltf,.glb,.fbx,.obj,.dae,.3ds,.blend,.ply,.stl,.x3d,.usd,.usda,.usdc"
+                  disabled={fileProcessing}
+                />
+
+                <div className="text-center">
+                  {fileProcessing ? (
+                    <div className="flex flex-col items-center">
+                      <div className="relative w-12 h-12 mb-4">
+                        <div className="absolute inset-0 rounded-full border-4 border-blue-200 dark:border-blue-800"></div>
+                        <div className="absolute inset-0 rounded-full border-4 border-blue-600 border-t-transparent animate-spin"></div>
+                      </div>
+                      <p className="text-blue-600 dark:text-blue-400 font-medium">
+                        Processing file...
+                      </p>
+                    </div>
+                  ) : selectedFile ? (
+                    <div className="flex flex-col items-center">
+                      <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center mb-4">
+                        <svg
+                          className="w-6 h-6 text-white"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
+                        </svg>
+                      </div>
+                      <p className="text-green-600 dark:text-green-400 font-medium mb-2">
+                        File uploaded successfully!
+                      </p>
+                      <div className="glass-darker rounded-lg p-4 text-left w-full max-w-sm">
+                        <div className="space-y-2 text-sm">
+                          <div>
+                            <span className="text-gray-600 dark:text-gray-400">
+                              Name:
+                            </span>
+                            <span className="ml-2 text-gray-900 dark:text-white font-medium">
+                              {selectedFile.name}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-gray-600 dark:text-gray-400">
+                              Size:
+                            </span>
+                            <span className="ml-2 text-gray-900 dark:text-white">
+                              {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-gray-600 dark:text-gray-400">
+                              Format:
+                            </span>
+                            <span className="ml-2 text-gray-900 dark:text-white uppercase">
+                              {model3DFile?.format}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center">
+                      <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center mb-4">
+                        <svg
+                          className="w-6 h-6 text-white"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                          />
+                        </svg>
+                      </div>
+                      <p className="text-gray-700 dark:text-gray-300 font-medium mb-2">
+                        Drag & drop your 3D model here
+                      </p>
+                      <p className="text-gray-500 dark:text-gray-400 text-sm mb-4">
+                        or click to browse files
+                      </p>
+                      <div className="flex flex-wrap gap-2 justify-center text-xs text-gray-400 dark:text-gray-500">
+                        <span className="px-2 py-1 glass rounded">GLTF</span>
+                        <span className="px-2 py-1 glass rounded">GLB</span>
+                        <span className="px-2 py-1 glass rounded">FBX</span>
+                        <span className="px-2 py-1 glass rounded">OBJ</span>
+                        <span className="px-2 py-1 glass rounded">DAE</span>
+                        <span className="px-2 py-1 glass rounded">3DS</span>
+                        <span className="px-2 py-1 glass rounded">+more</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Error message */}
+              {fileError && (
+                <div className="glass rounded-lg border border-red-500/20 p-4">
+                  <div className="flex items-start space-x-3">
+                    <div className="flex-shrink-0">
+                      <svg
+                        className="w-5 h-5 text-red-500"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-medium text-red-800 dark:text-red-400">
+                        Error uploading file
+                      </h3>
+                      <p className="text-sm text-red-700 dark:text-red-300 mt-1">
+                        {fileError}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* File requirements */}
+              <div className="glass-darker rounded-lg p-4 border border-white/10">
+                <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
+                  File Requirements:
+                </h4>
+                <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                  <li>• Maximum file size: 50MB</li>
+                  <li>
+                    • Supported formats: GLTF, GLB, FBX, OBJ, DAE, 3DS, BLEND,
+                    PLY, STL, X3D, USD
+                  </li>
+                  <li>• Recommended: GLB format for best performance</li>
+                </ul>
+              </div>
+            </div>
+          )}
 
           {/* URL Thumbnail modernizada */}
           <div className="space-y-2">

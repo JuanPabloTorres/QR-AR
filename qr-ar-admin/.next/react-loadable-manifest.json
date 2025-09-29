@@ -16,5 +16,17 @@
     "files": [
       "static/chunks/_pages-dir-browser_node_modules_next_dist_pages__error_js.js"
     ]
+  },
+  "components\\ui\\Model3DViewer.tsx -> three": {
+    "id": "components\\ui\\Model3DViewer.tsx -> three",
+    "files": [
+      "static/chunks/_app-pages-browser_node_modules_three_build_three_module_js.js"
+    ]
+  },
+  "components\\ui\\Model3DViewer.tsx -> three/examples/jsm/loaders/GLTFLoader.js": {
+    "id": "components\\ui\\Model3DViewer.tsx -> three/examples/jsm/loaders/GLTFLoader.js",
+    "files": [
+      "static/chunks/_app-pages-browser_node_modules_three_examples_jsm_loaders_GLTFLoader_js.js"
+    ]
   }
 }

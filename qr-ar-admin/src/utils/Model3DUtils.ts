@@ -15,8 +15,29 @@ export class Model3DUtils {
 
     const arrayBuffer = await file.arrayBuffer();
 
+    // Convertir a base64 usando un método más robusto
+    const bytes = new Uint8Array(arrayBuffer);
+    let binaryString = "";
+
+    // Para archivos grandes, usar chunks más pequeños para evitar stack overflow
+    const chunkSize = 8192; // 8KB chunks
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      const chunk = bytes.slice(i, i + chunkSize);
+      // Usar apply solo en chunks pequeños para evitar "Maximum call stack size exceeded"
+      binaryString += String.fromCharCode.apply(null, Array.from(chunk));
+    }
+
+    const base64Data = btoa(binaryString);
+
+    console.log("[Model3DUtils] File converted to base64:", {
+      originalSize: file.size,
+      base64Length: base64Data.length,
+      fileName: file.name,
+      format,
+    });
+
     return {
-      data: new Uint8Array(arrayBuffer),
+      data: base64Data, // Ahora es string base64 como espera el tipo
       format,
       size: file.size,
       fileName: file.name,

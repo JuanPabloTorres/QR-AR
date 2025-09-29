@@ -10,6 +10,7 @@ public static class ServiceCollectionExtensions
             .AddDatabaseConfiguration(configuration)
             .AddCorsConfiguration(configuration)
             .AddSwaggerConfiguration()
+            .AddServerConfiguration()
             .AddApplicationServices();
     }
 }

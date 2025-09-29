@@ -13,6 +13,9 @@ public static class MiddlewareExtensions
         // CORS
         app.UseCors("default");
 
+        // Static files (serve models, images, etc.)
+        app.UseStaticFiles();
+
         // Swagger (only in development)
         app.UseSwaggerConfiguration();
 

@@ -27,13 +27,15 @@ export function useExperiences(params?: {
   const fetchExperiences = async () => {
     try {
       setLoading(true);
-
       setError(null);
 
+      console.log("[useExperiences] Fetching with params:", params);
       const result = await listExperiences(params);
 
+      console.log("[useExperiences] Result received:", result);
       setData(result);
     } catch (err) {
+      console.error("[useExperiences] Error:", err);
       setError(err instanceof Error ? err.message : "Error desconocido");
       setData(null);
     } finally {
@@ -76,7 +78,14 @@ export function useExperience(id: string | null) {
         setLoading(true);
         setError(null);
         const result = await getExperienceById(id);
-        setData(result);
+
+        if (!result || !result.data) {
+          setError("Experience not found");
+          setData(null);
+          return;
+        }
+
+        setData(result?.data);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Error desconocido");
         setData(null);

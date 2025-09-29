@@ -6,15 +6,15 @@ export type Experience = {
   mediaUrl: string;
   thumbnailUrl?: string;
   // Nuevos campos para objetos 3D
-  modelData?: Uint8Array | ArrayBuffer | Buffer; // Datos binarios del modelo 3D
-  modelFormat?: Model3DFormat; // Formato del archivo 3D
+  modelData?: string; // Datos binarios del modelo 3D codificados en base64
+  modelFormat?: string; // Formato del archivo 3D - string para compatibilidad con backend
   modelSize?: number; // Tamaño del archivo en bytes
   modelFileName?: string; // Nombre original del archivo
   isActive: boolean;
   createdAt?: string;
   updatedAt?: string;
-  createdAtUtc?: string;
-  qrCodeUrl?: string; // URL del código QR generado
+  createdAtUtc: string; // Requerido por el backend - DateTime mapeado a string
+  qrCodeUrl: string; // URL del código QR generado - campo requerido y estandarizado
 };
 
 // Tipos de formatos 3D soportados
@@ -62,7 +62,7 @@ export function getModelFormatFromExtension(
 
 // Tipo para la carga de archivos 3D
 export type Model3DFile = {
-  data: Uint8Array | ArrayBuffer | Buffer;
+  data: string; // Base64 encoded data
   format: Model3DFormat;
   size: number;
   fileName: string;
@@ -75,7 +75,7 @@ export type UpdateExperienceRequest = Omit<Experience, "id" | "createdAtUtc">;
 // Tipo específico para experiencias con modelos 3D
 export type Model3DExperience = Experience & {
   type: "Model3D";
-  modelData: Uint8Array | ArrayBuffer | Buffer;
+  modelData: string; // Base64 encoded model data
   modelFormat: Model3DFormat;
   modelSize: number;
   modelFileName: string;

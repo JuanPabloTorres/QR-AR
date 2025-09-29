@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useExperiences, useExperienceActions } from "@/hooks/useApi";
 import { downloadArExperienceQrCode } from "@/utils/qrCodeHelpers";
+import PreviewCard from "@/components/ui/PreviewCard";
 import Link from "next/link";
 
 export default function ExperiencesPage() {
@@ -222,80 +223,14 @@ export default function ExperiencesPage() {
             {data.data?.items.map((x, index) => (
               <div
                 key={x.id}
-                className={`group glass rounded-2xl p-6 border border-white/20 hover:border-blue-500/30 transition-all duration-500 hover:scale-105 hover:shadow-2xl hover:shadow-blue-500/10 animate-slideIn`}
+                className={`group glass rounded-2xl overflow-hidden border border-white/20 hover:border-blue-500/30 transition-all duration-500 hover:scale-105 hover:shadow-2xl hover:shadow-blue-500/10 animate-slideIn`}
               >
-                {/* Header de la card */}
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center space-x-3">
-                    <div
-                      className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                        x.type === "Video"
-                          ? "bg-gradient-to-r from-blue-500 to-blue-600"
-                          : x.type === "Model3D"
-                          ? "bg-gradient-to-r from-purple-500 to-purple-600"
-                          : "bg-gradient-to-r from-green-500 to-green-600"
-                      } group-hover:scale-110 transition-transform duration-300`}
-                    >
-                      {x.type === "Video" ? (
-                        <svg
-                          className="w-6 h-6 text-white"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
-                          />
-                        </svg>
-                      ) : x.type === "Model3D" ? (
-                        <svg
-                          className="w-6 h-6 text-white"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-                          />
-                        </svg>
-                      ) : (
-                        <svg
-                          className="w-6 h-6 text-white"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                          />
-                        </svg>
-                      )}
-                    </div>
-                    <div>
-                      <span
-                        className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${
-                          x.type === "Video"
-                            ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
-                            : x.type === "Model3D"
-                            ? "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400"
-                            : "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-                        }`}
-                      >
-                        {x.type}
-                      </span>
-                    </div>
-                  </div>
+                {/* Preview del contenido */}
+                <div className="relative">
+                  <PreviewCard experience={x} />
+                  {/* Status badge overlay */}
                   <div
-                    className={`px-3 py-1 text-xs font-semibold rounded-full ${
+                    className={`absolute top-4 right-4 px-3 py-1 text-xs font-semibold rounded-full ${
                       x.isActive
                         ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
                         : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
@@ -305,76 +240,58 @@ export default function ExperiencesPage() {
                   </div>
                 </div>
 
-                {/* Title */}
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                  {x.title}
-                </h3>
-
-                {/* ID */}
-                <div className="mb-6">
-                  <p className="text-sm text-gray-500 dark:text-gray-400 font-mono">
-                    ID: {x.id.substring(0, 8)}...
-                  </p>
-                </div>
-
-                {/* Acciones */}
-                <div className="flex items-center justify-between pt-4 border-t border-white/10">
-                  <Link
-                    href={`/experiences/${x.id}`}
-                    className="group/action flex items-center px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded-lg transition-all duration-300"
-                  >
-                    <svg
-                      className="w-4 h-4 mr-1 group-hover/action:scale-110 transition-transform duration-300"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
+                {/* Content info */}
+                <div className="p-6">
+                  {/* Header with type badge */}
+                  <div className="flex items-center justify-between mb-4">
+                    <span
+                      className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${
+                        x.type === "Video"
+                          ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
+                          : x.type === "Model3D"
+                          ? "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400"
+                          : x.type === "Image"
+                          ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                          : "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400"
+                      }`}
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                      />
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                      />
-                    </svg>
-                    View
-                  </Link>
+                      {x.type === "Video" && "📹 "}
+                      {x.type === "Model3D" && "🎯 "}
+                      {x.type === "Image" && "🖼️ "}
+                      {x.type === "Message" && "💬 "}
+                      {x.type}
+                    </span>
 
-                  <div className="flex items-center space-x-2">
-                    <button
-                      onClick={async () => {
-                        try {
-                          await downloadArExperienceQrCode(x.id, x.title);
-                        } catch (error) {
-                          alert("Error downloading QR code");
-                        }
-                      }}
-                      className="group/action flex items-center px-3 py-2 text-sm text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition-all duration-300"
-                    >
-                      <svg
-                        className="w-4 h-4 mr-1 group-hover/action:scale-110 transition-transform duration-300"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h4"
-                        />
-                      </svg>
-                      QR
-                    </button>
+                    {/* Model info for 3D models */}
+                    {x.type === "Model3D" && x.modelSize && (
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {(x.modelSize / 1024 / 1024).toFixed(1)} MB
+                      </span>
+                    )}
+                  </div>
 
+                  {/* Title */}
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                    {x.title}
+                  </h3>
+
+                  {/* ID and metadata */}
+                  <div className="mb-6 space-y-1">
+                    <p className="text-sm text-gray-500 dark:text-gray-400 font-mono">
+                      ID: {x.id.substring(0, 8)}...
+                    </p>
+                    {x.createdAtUtc && (
+                      <p className="text-xs text-gray-400">
+                        Created: {new Date(x.createdAtUtc).toLocaleDateString()}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Acciones */}
+                  <div className="flex items-center justify-between pt-4 border-t border-white/10">
                     <Link
-                      href={`/experiences/edit/${x.id}`}
-                      className="group/action flex items-center px-3 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all duration-300"
+                      href={`/experiences/viewer/${x.id}`}
+                      className="group/action flex items-center px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded-lg transition-all duration-300"
                     >
                       <svg
                         className="w-4 h-4 mr-1 group-hover/action:scale-110 transition-transform duration-300"
@@ -386,34 +303,88 @@ export default function ExperiencesPage() {
                           strokeLinecap="round"
                           strokeLinejoin="round"
                           strokeWidth={2}
-                          d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
                         />
                       </svg>
-                      Edit
+                      View
                     </Link>
 
-                    <button
-                      onClick={async () => {
-                        await handleDelete(x.id);
-                      }}
-                      disabled={actionLoading}
-                      className="group/action flex items-center px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all duration-300 disabled:opacity-50"
-                    >
-                      <svg
-                        className="w-4 h-4 mr-1 group-hover/action:scale-110 transition-transform duration-300"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={async () => {
+                          try {
+                            await downloadArExperienceQrCode(x.id, x.title);
+                          } catch (error) {
+                            alert("Error downloading QR code");
+                          }
+                        }}
+                        className="group/action flex items-center px-3 py-2 text-sm text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition-all duration-300"
                       >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                        />
-                      </svg>
-                      Delete
-                    </button>
+                        <svg
+                          className="w-4 h-4 mr-1 group-hover/action:scale-110 transition-transform duration-300"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h4"
+                          />
+                        </svg>
+                        QR
+                      </button>
+
+                      <Link
+                        href={`/experiences/edit/${x.id}`}
+                        className="group/action flex items-center px-3 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all duration-300"
+                      >
+                        <svg
+                          className="w-4 h-4 mr-1 group-hover/action:scale-110 transition-transform duration-300"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                          />
+                        </svg>
+                        Edit
+                      </Link>
+
+                      <button
+                        onClick={async () => {
+                          await handleDelete(x.id);
+                        }}
+                        disabled={actionLoading}
+                        className="group/action flex items-center px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all duration-300 disabled:opacity-50"
+                      >
+                        <svg
+                          className="w-4 h-4 mr-1 group-hover/action:scale-110 transition-transform duration-300"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                          />
+                        </svg>
+                        Delete
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>

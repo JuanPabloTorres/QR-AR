@@ -8,9 +8,11 @@
 
         public Guid CreatedBy { get; set; }
 
-        public DateTime UpdatedAtUtc { get; set; }
+        public DateTime? UpdatedAtUtc { get; set; }
 
         public Guid UpdatedBy { get; set; }
+
+        public bool IsActive { get; set; }
 
 
     }

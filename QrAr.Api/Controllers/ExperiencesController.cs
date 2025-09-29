@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Builder;
 using QrAr.Api.Dtos;
 using QrAr.Api.Dtos.Responses;
 using QrAr.Api.Models;
@@ -27,17 +26,35 @@ namespace QrAr.Api.Controllers
 
             // DELETE /api/experiences/{id}
             app.MapDelete("/api/experiences/{id}", DeleteExperience);
+
+            // GET /api/experiences/{id}/model - Serve 3D model files
+            app.MapGet("/api/experiences/{id}/model", GetExperienceModel);
         }
 
         private static async Task<IResult> GetExperienceById(string id, IExperienceService experienceService)
         {
-            var experience = await experienceService.GetByIdAsync(id);
+            try
+            {
+                if (string.IsNullOrWhiteSpace(id))
+                    return Results.BadRequest(ApiResponses.ValidationError("Invalid ID", new Dictionary<string, string[]> { ["id"] = ["ID cannot be empty"] }));
 
-            if (experience is null)
-                return Results.NotFound(ApiResponses.NotFound("Experience not found"));
+                var experience = await experienceService.GetByIdAsync(id);
 
-            var dto = ExperienceDto.ToDto(experience);
-            return Results.Ok(ApiResponses.Success(dto, "Experience retrieved successfully"));
+                if (experience is null)
+                    return Results.NotFound(ApiResponses.NotFound("Experience not found"));
+
+                var dto = ExperienceDto.ToDto(experience);
+                return Results.Ok(ApiResponses.Success(dto, "Experience retrieved successfully"));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error getting experience by ID {id}: {ex.Message}");
+                return Results.Problem(
+                    detail: "An error occurred while retrieving the experience",
+                    title: "Internal Server Error",
+                    statusCode: 500
+                );
+            }
         }
 
         private static async Task<IResult> GetAllActiveExperiences(IExperienceService experienceService)
@@ -52,20 +69,67 @@ namespace QrAr.Api.Controllers
             string? search, string? type, int page, int pageSize, bool? onlyActive,
             IExperienceService experienceService)
         {
-            var (items, total) = await experienceService.GetFilteredAsync(search, type, page, pageSize, onlyActive);
+            try
+            {
+                var (items, total) = await experienceService.GetFilteredAsync(search, type, page, pageSize, onlyActive);
 
-            return Results.Ok(ApiResponses.PaginatedSuccess(
-                items, total, page, pageSize,
-                $"Retrieved {items.Count()} experiences"));
+                return Results.Ok(ApiResponses.PaginatedSuccess(
+                    items, total, page, pageSize,
+                    $"Retrieved {items.Count()} experiences"));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error getting experiences: {ex.Message}");
+                Console.WriteLine($"Stack trace: {ex.StackTrace}");
+                return Results.Problem(
+                    detail: ex.Message,
+                    title: "Internal Server Error",
+                    statusCode: 500
+                );
+            }
         }
 
-        private static async Task<IResult> CreateExperience(Experience experience, IExperienceService experienceService)
+        private static async Task<IResult> CreateExperience(ExperienceCreateUpdateDto dto, IExperienceService experienceService)
         {
-            var createdExperience = await experienceService.CreateAsync(experience);
-            var dto = ExperienceDto.ToDto(createdExperience);
+            try
+            {
+                var errors = await experienceService.ValidateExperienceAsync(dto);
+                if (errors.Count > 0)
+                    return Results.BadRequest(ApiResponses.ValidationError("Invalid input data", errors));
 
-            var response = ApiResponses.Success(dto, "Experience created successfully");
-            return Results.Created($"/api/experiences/{createdExperience.Id}", response);
+                var experienceId = Guid.NewGuid().ToString("N");
+                
+                // Map DTO to Experience entity
+                var experience = new Experience
+                {
+                    Id = experienceId,
+                    Title = dto.Title,
+                    Type = dto.Type,
+                    MediaUrl = dto.MediaUrl ?? "",
+                    ThumbnailUrl = dto.ThumbnailUrl,
+                    IsActive = dto.IsActive,
+                    ModelData = dto.ModelData,
+                    ModelFormat = dto.ModelFormat,
+                    ModelSize = dto.ModelSize,
+                    ModelFileName = dto.ModelFileName,
+                    QRCodeUrl = $"https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={Uri.EscapeDataString($"https://localhost:3000/ar/{experienceId}")}"
+                };
+
+                var createdExperience = await experienceService.CreateAsync(experience);
+                var responseDto = ExperienceDto.ToDto(createdExperience);
+
+                var response = ApiResponses.Success(responseDto, "Experience created successfully");
+                return Results.Created($"/api/experiences/{createdExperience.Id}", response);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error creating experience: {ex.Message}");
+                return Results.Problem(
+                    detail: "An error occurred while creating the experience",
+                    title: "Internal Server Error",
+                    statusCode: 500
+                );
+            }
         }
 
         private static async Task<IResult> UpdateExperience(string id, ExperienceCreateUpdateDto dto,
@@ -90,6 +154,41 @@ namespace QrAr.Api.Controllers
                 return Results.NotFound(ApiResponses.NotFound("Experience not found"));
 
             return Results.Ok(ApiResponses.Success("Experience deleted successfully"));
+        }
+
+        private static async Task<IResult> GetExperienceModel(string id, IExperienceService experienceService)
+        {
+            var experience = await experienceService.GetByIdAsync(id);
+
+            if (experience is null)
+                return Results.NotFound(ApiResponses.NotFound("Experience not found"));
+
+            if (experience.Type != "Model3D" || string.IsNullOrEmpty(experience.ModelData))
+                return Results.NotFound(ApiResponses.NotFound("3D model not found for this experience"));
+
+            try
+            {
+                // Convert base64 string back to bytes
+                var modelBytes = Convert.FromBase64String(experience.ModelData);
+                
+                // Determine content type based on model format
+                var contentType = experience.ModelFormat?.ToLower() switch
+                {
+                    "glb" => "model/gltf-binary",
+                    "gltf" => "model/gltf+json",
+                    "fbx" => "application/octet-stream",
+                    "obj" => "text/plain",
+                    _ => "application/octet-stream"
+                };
+
+                var fileName = experience.ModelFileName ?? $"{experience.Id}.{experience.ModelFormat ?? "glb"}";
+                
+                return Results.File(modelBytes, contentType, fileName);
+            }
+            catch (Exception ex)
+            {
+                return Results.BadRequest(ApiResponses.Error("Failed to serve model file", ex.Message));
+            }
         }
     }
 }

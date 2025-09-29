@@ -5,6 +5,7 @@ import { getExperienceById, deleteExperience } from "@/lib/apiClient";
 import { Experience } from "@/types/experience";
 import Link from "next/link";
 import QrCodeManager from "@/components/ui/QrCodeManager";
+import Model3DViewer from "../../../components/ui/Model3DViewer";
 import { useRouter } from "next/navigation";
 
 export default function ExperiencePage() {
@@ -29,6 +30,14 @@ export default function ExperiencePage() {
 
           return;
         }
+
+        console.log("Experience loaded:", exp.data);
+        console.log("Model data present:", !!exp.data.modelData);
+        console.log("Model data type:", typeof exp.data.modelData);
+        console.log(
+          "Model data length:",
+          exp.data.modelData ? (exp.data.modelData as any).length : "N/A"
+        );
 
         setExperience(exp.data);
       } catch (err) {
@@ -245,6 +254,92 @@ export default function ExperiencePage() {
               </div>
             )}
 
+            {/* Model 3D Information */}
+            {experience.type === "Model3D" && (
+              <>
+                {experience.modelFileName && (
+                  <div className="space-y-2">
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                      Model File Name
+                    </label>
+                    <div className="glass-darker rounded-lg p-3 border border-white/20">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-2xl">🎯</span>
+                        <code className="text-sm text-purple-600 dark:text-purple-400 font-mono">
+                          {experience.modelFileName}
+                        </code>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {experience.modelFormat && (
+                  <div className="space-y-2">
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                      Model Format
+                    </label>
+                    <div className="inline-flex items-center px-3 py-2 glass-darker rounded-lg border border-white/20">
+                      <span className="text-sm font-medium text-purple-600 dark:text-purple-400 uppercase tracking-wide">
+                        {experience.modelFormat}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {experience.modelSize && (
+                  <div className="space-y-2">
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                      Model Size
+                    </label>
+                    <div className="inline-flex items-center px-3 py-2 glass-darker rounded-lg border border-white/20">
+                      <svg
+                        className="w-4 h-4 mr-2 text-blue-500"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                        />
+                      </svg>
+                      <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
+                        {(experience.modelSize / 1024 / 1024).toFixed(2)} MB
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {experience.modelData && (
+                  <div className="space-y-2">
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                      Model Data Status
+                    </label>
+                    <div className="inline-flex items-center px-3 py-2 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-lg">
+                      <svg
+                        className="w-4 h-4 mr-2"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                      <span className="text-sm font-medium">
+                        Model data available
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+
             {/* Created Date */}
             {experience.createdAtUtc && (
               <div className="space-y-2">
@@ -267,32 +362,191 @@ export default function ExperiencePage() {
             )}
 
             {/* Media Preview */}
-            {experience.type === "Video" && experience.mediaUrl && (
-              <div className="space-y-2">
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
-                  Media Preview
-                </label>
-                <div className="glass-darker rounded-lg p-4 border border-white/20">
-                  <video
-                    src={experience.mediaUrl}
-                    controls
-                    className="w-full max-h-64 rounded-lg"
-                  />
+            {experience.type === "Video" &&
+              (experience.mediaUrl || experience.modelData) && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                      Video Preview
+                    </label>
+                    {experience.modelData && (
+                      <button
+                        onClick={() => {
+                          if (experience.modelData) {
+                            const binaryString = atob(experience.modelData);
+                            const bytes = new Uint8Array(binaryString.length);
+                            for (let i = 0; i < binaryString.length; i++) {
+                              bytes[i] = binaryString.charCodeAt(i);
+                            }
+                            const blob = new Blob([bytes], {
+                              type: "video/mp4",
+                            });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement("a");
+                            a.href = url;
+                            a.download =
+                              experience.modelFileName || "video.mp4";
+                            a.click();
+                            URL.revokeObjectURL(url);
+                          }
+                        }}
+                        className="text-sm px-3 py-1 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900 dark:hover:bg-blue-800 text-blue-700 dark:text-blue-300 rounded-lg transition-colors"
+                      >
+                        📥 Download
+                      </button>
+                    )}
+                  </div>
+                  <div className="glass-darker rounded-lg p-4 border border-white/20">
+                    <video
+                      src={
+                        experience.modelData
+                          ? `data:video/mp4;base64,${experience.modelData}`
+                          : experience.mediaUrl
+                      }
+                      controls
+                      className="w-full max-h-64 rounded-lg"
+                    />
+                  </div>
                 </div>
+              )}
+
+            {experience.type === "Image" &&
+              (experience.mediaUrl || experience.modelData) && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                      Image Preview
+                    </label>
+                    {experience.modelData && (
+                      <button
+                        onClick={() => {
+                          if (experience.modelData) {
+                            const binaryString = atob(experience.modelData);
+                            const bytes = new Uint8Array(binaryString.length);
+                            for (let i = 0; i < binaryString.length; i++) {
+                              bytes[i] = binaryString.charCodeAt(i);
+                            }
+                            const blob = new Blob([bytes], {
+                              type: "image/jpeg",
+                            });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement("a");
+                            a.href = url;
+                            a.download =
+                              experience.modelFileName || "image.jpg";
+                            a.click();
+                            URL.revokeObjectURL(url);
+                          }
+                        }}
+                        className="text-sm px-3 py-1 bg-green-100 hover:bg-green-200 dark:bg-green-900 dark:hover:bg-green-800 text-green-700 dark:text-green-300 rounded-lg transition-colors"
+                      >
+                        📥 Download
+                      </button>
+                    )}
+                  </div>
+                  <div className="glass-darker rounded-lg p-4 border border-white/20">
+                    <img
+                      src={
+                        experience.modelData
+                          ? `data:image/jpeg;base64,${experience.modelData}`
+                          : experience.mediaUrl
+                      }
+                      alt={experience.title}
+                      className="w-full max-h-64 rounded-lg object-contain"
+                    />
+                  </div>
+                </div>
+              )}
+
+            {experience.type === "Model3D" && experience.modelData && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                    3D Model Preview
+                  </label>
+                  <button
+                    onClick={() => {
+                      if (experience.modelData) {
+                        const binaryString = atob(experience.modelData);
+                        const bytes = new Uint8Array(binaryString.length);
+                        for (let i = 0; i < binaryString.length; i++) {
+                          bytes[i] = binaryString.charCodeAt(i);
+                        }
+                        const mimeType =
+                          experience.modelFormat?.toLowerCase() === "glb"
+                            ? "model/gltf-binary"
+                            : "model/gltf+json";
+                        const blob = new Blob([bytes], { type: mimeType });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement("a");
+                        a.href = url;
+                        a.download =
+                          experience.modelFileName ||
+                          `model.${experience.modelFormat}`;
+                        a.click();
+                        URL.revokeObjectURL(url);
+                      }
+                    }}
+                    className="text-sm px-3 py-1 bg-purple-100 hover:bg-purple-200 dark:bg-purple-900 dark:hover:bg-purple-800 text-purple-700 dark:text-purple-300 rounded-lg transition-colors"
+                  >
+                    📥 Download 3D Model
+                  </button>
+                </div>
+                <Model3DViewer
+                  modelData={experience.modelData}
+                  modelFormat={experience.modelFormat}
+                  className="w-full"
+                  experienceId={experience.id}
+                  mediaUrl={experience.mediaUrl}
+                />
+                {experience.modelFileName && (
+                  <div className="flex items-center justify-center space-x-2 text-sm text-purple-600 dark:text-purple-400 mt-2">
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                      />
+                    </svg>
+                    <span>{experience.modelFileName}</span>
+                    {experience.modelFormat && (
+                      <span className="px-2 py-1 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 rounded text-xs font-medium uppercase">
+                        {experience.modelFormat}
+                      </span>
+                    )}
+                    {experience.modelSize && (
+                      <span className="text-xs text-gray-500">
+                        ({(experience.modelSize / 1024 / 1024).toFixed(2)} MB)
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
-            {experience.type === "Image" && experience.mediaUrl && (
+            {experience.type === "Message" && (
               <div className="space-y-2">
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
-                  Media Preview
+                  Message Content
                 </label>
                 <div className="glass-darker rounded-lg p-4 border border-white/20">
-                  <img
-                    src={experience.mediaUrl}
-                    alt={experience.title}
-                    className="w-full max-h-64 rounded-lg object-contain"
-                  />
+                  <div className="flex items-center space-x-3">
+                    <div className="text-4xl">💬</div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
+                        Message Experience
+                      </h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        This experience displays a text message in AR
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}

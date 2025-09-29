@@ -36,9 +36,23 @@ async function apiRequest<T>(
 
       try {
         const errorData = await response.json();
-        errorMessage = errorData.message || errorData.error || errorMessage;
+        console.error("API Error Details:", errorData);
+        errorMessage =
+          errorData.message ||
+          errorData.detail ||
+          errorData.error ||
+          errorMessage;
       } catch {
-        // If we can't parse the error response, use the default message
+        // If we can't parse the error response, try to get text
+        try {
+          const errorText = await response.text();
+          if (errorText) {
+            console.error("API Error Text:", errorText);
+            errorMessage = errorText;
+          }
+        } catch {
+          // Use the default message if nothing else works
+        }
       }
 
       throw new Error(errorMessage);
@@ -109,6 +123,14 @@ export async function getExperienceById(
 export async function createExperience(
   data: Omit<Experience, "id" | "createdAtUtc">
 ): Promise<Experience> {
+  console.log("[createExperience] Sending data:", {
+    type: data.type,
+    hasModelData: !!data.modelData,
+    modelDataLength: data.modelData?.length || 0,
+    modelFormat: data.modelFormat,
+    modelFileName: data.modelFileName,
+  });
+
   return apiRequest<Experience>("/experiences", {
     method: "POST",
     body: JSON.stringify(data),
@@ -119,6 +141,14 @@ export async function updateExperience(
   id: string,
   data: Omit<Experience, "id" | "createdAtUtc">
 ): Promise<Experience> {
+  console.log("[updateExperience] Sending data:", {
+    type: data.type,
+    hasModelData: !!data.modelData,
+    modelDataLength: data.modelData?.length || 0,
+    modelFormat: data.modelFormat,
+    modelFileName: data.modelFileName,
+  });
+
   return apiRequest<Experience>(`/experiences/${encodeURIComponent(id)}`, {
     method: "PUT",
     body: JSON.stringify(data),
@@ -129,6 +159,25 @@ export async function deleteExperience(id: string): Promise<void> {
   return apiRequest<void>(`/experiences/${encodeURIComponent(id)}`, {
     method: "DELETE",
   });
+}
+
+// Get 3D model file for an experience
+export async function getExperienceModel(id: string): Promise<Response> {
+  const url = `${baseUrl}/experiences/${encodeURIComponent(id)}/model`;
+  console.log(`Fetching 3D model from: ${url}`);
+
+  const response = await fetch(url, {
+    method: "GET",
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      `Failed to fetch 3D model: ${response.status} ${response.statusText}`
+    );
+  }
+
+  return response;
 }
 
 // Health check function to test API connectivity

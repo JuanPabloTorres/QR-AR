@@ -36,7 +36,10 @@ namespace QrAr.Api.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<DateTime>("UpdatedAtUtc")
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
                         .HasColumnType("TEXT");
 
                     b.Property<Guid>("UpdatedBy")
@@ -67,6 +70,18 @@ namespace QrAr.Api.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("ModelData")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ModelFileName")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ModelFormat")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long?>("ModelSize")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("QRCodeUrl")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -82,7 +97,7 @@ namespace QrAr.Api.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<DateTime>("UpdatedAtUtc")
+                    b.Property<DateTime?>("UpdatedAtUtc")
                         .HasColumnType("TEXT");
 
                     b.Property<Guid>("UpdatedBy")
