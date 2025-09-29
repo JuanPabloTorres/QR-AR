@@ -9,10 +9,11 @@ namespace QrAr.Api.Dtos
           string MediaUrl,
           string? ThumbnailUrl,
           bool IsActive,
-          DateTime CreatedAtUtc)
+          DateTime CreatedAtUtc,
+          string? QrCodeUrl)
     {
         public static ExperienceDto ToDto(Experience e) =>
-            new(e.Id, e.Title, e.Type, e.MediaUrl, e.ThumbnailUrl, e.IsActive, e.CreatedAtUtc);
+            new(e.Id, e.Title, e.Type, e.MediaUrl, e.ThumbnailUrl, e.IsActive, e.CreatedAtUtc, e.QrCodeUrl);
     }
 
 

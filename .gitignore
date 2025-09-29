@@ -426,3 +426,12 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+# Next.js build artifacts
+qr-ar-admin/.next/cache/
+qr-ar-admin/.next/static/webpack/
+qr-ar-admin/.next/server/
+qr-ar-admin/.next/build-manifest.json
+qr-ar-admin/.next/app-build-manifest.json
+qr-ar-admin/.next/prerender-manifest.json
+qr-ar-admin/.next/react-loadable-manifest.json

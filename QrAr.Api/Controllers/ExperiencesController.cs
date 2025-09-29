@@ -49,8 +49,12 @@ namespace QrAr.Api.Controllers
         }
 
         private static async Task<IResult> GetExperiences(
-            string? search, string? type, int page, int pageSize, bool? onlyActive,
-            IExperienceService experienceService)
+            IExperienceService experienceService,
+            string? search = null, 
+            string? type = null, 
+            int page = 1, 
+            int pageSize = 20, 
+            bool? onlyActive = null)
         {
             var (items, total) = await experienceService.GetFilteredAsync(search, type, page, pageSize, onlyActive);
 
@@ -59,12 +63,28 @@ namespace QrAr.Api.Controllers
                 $"Retrieved {items.Count()} experiences"));
         }
 
-        private static async Task<IResult> CreateExperience(Experience experience, IExperienceService experienceService)
+        private static async Task<IResult> CreateExperience(ExperienceCreateUpdateDto dto, IExperienceService experienceService)
         {
-            var createdExperience = await experienceService.CreateAsync(experience);
-            var dto = ExperienceDto.ToDto(createdExperience);
+            var errors = await experienceService.ValidateExperienceAsync(dto);
+            if (errors.Count > 0)
+                return Results.BadRequest(ApiResponses.ValidationError("Invalid input data", errors));
 
-            var response = ApiResponses.Success(dto, "Experience created successfully");
+            var experience = new Experience
+            {
+                Id = Guid.NewGuid().ToString("N"),
+                Title = dto.Title,
+                Type = dto.Type,
+                MediaUrl = dto.MediaUrl,
+                ThumbnailUrl = dto.ThumbnailUrl,
+                IsActive = dto.IsActive,
+                QrCodeUrl = dto.QrCodeUrl,
+                CreatedAtUtc = DateTime.UtcNow
+            };
+
+            var createdExperience = await experienceService.CreateAsync(experience);
+            var responseDto = ExperienceDto.ToDto(createdExperience);
+
+            var response = ApiResponses.Success(responseDto, "Experience created successfully");
             return Results.Created($"/api/experiences/{createdExperience.Id}", response);
         }
 

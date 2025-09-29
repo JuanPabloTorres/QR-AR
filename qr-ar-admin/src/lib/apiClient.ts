@@ -108,8 +108,8 @@ export async function getExperienceById(
 
 export async function createExperience(
   data: Omit<Experience, "id" | "createdAtUtc">
-): Promise<Experience> {
-  return apiRequest<Experience>("/experiences", {
+): Promise<ApiResponse<Experience>> {
+  return apiRequest<ApiResponse<Experience>>("/experiences", {
     method: "POST",
     body: JSON.stringify(data),
   });
@@ -118,8 +118,8 @@ export async function createExperience(
 export async function updateExperience(
   id: string,
   data: Omit<Experience, "id" | "createdAtUtc">
-): Promise<Experience> {
-  return apiRequest<Experience>(`/experiences/${encodeURIComponent(id)}`, {
+): Promise<ApiResponse<Experience>> {
+  return apiRequest<ApiResponse<Experience>>(`/experiences/${encodeURIComponent(id)}`, {
     method: "PUT",
     body: JSON.stringify(data),
   });
