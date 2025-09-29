@@ -2,8 +2,9 @@
 {
     public sealed record ExperienceCreateUpdateDto(
       string Title,
-      string Type,        // "Video" | "Model3D" | "Message"
+      string Type,        // "Video" | "Model3D" | "Image" | "Message"
       string MediaUrl,
       string? ThumbnailUrl,
-      bool IsActive);
+      bool IsActive,
+      string? QrCodeUrl);
 }

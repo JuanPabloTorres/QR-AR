@@ -78,6 +78,7 @@ public class ExperienceService : IExperienceService
         experience.MediaUrl = dto.MediaUrl;
         experience.ThumbnailUrl = dto.ThumbnailUrl;
         experience.IsActive = dto.IsActive;
+        experience.QrCodeUrl = dto.QrCodeUrl;
 
         await _context.SaveChangesAsync();
 
@@ -107,7 +108,7 @@ public class ExperienceService : IExperienceService
             errors["type"] = ["Debe ser Video | Model3D | Message | Image"];
 
         if (string.IsNullOrWhiteSpace(dto.MediaUrl) || !Uri.IsWellFormedUriString(dto.MediaUrl, UriKind.Absolute))
-            errors["mediaUrl"] = ["URL inválida"];
+            errors["mediaUrl"] = ["URL invï¿½lida"];
 
         return Task.FromResult(errors);
     }

@@ -1,4 +1,4 @@
-// File: C:\Users\juanp\source\repos\QR-App\qr-ar-admin\src\app\experiences\edit\[id]\page.tsx
+// File: /home/runner/work/QR-AR/QR-AR/qr-ar-admin/src/app/experiences/edit/[id]/page.tsx
 import * as entry from '../../../../../../src/app/experiences/edit/[id]/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

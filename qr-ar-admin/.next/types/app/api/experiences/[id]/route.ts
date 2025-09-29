@@ -1,4 +1,4 @@
-// File: C:\Users\juanp\source\repos\QR-App\qr-ar-admin\src\app\api\experiences\[id]\route.ts
+// File: /home/runner/work/QR-AR/QR-AR/qr-ar-admin/src/app/api/experiences/[id]/route.ts
 import * as entry from '../../../../../../src/app/api/experiences/[id]/route.js'
 import type { NextRequest } from 'next/server.js'
 

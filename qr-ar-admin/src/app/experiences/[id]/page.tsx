@@ -296,6 +296,44 @@ export default function ExperiencePage() {
                 </div>
               </div>
             )}
+
+            {experience.type === "Model3D" && experience.mediaUrl && (
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                  3D Model Preview
+                </label>
+                <div className="glass-darker rounded-lg p-4 border border-white/20">
+                  <div className="bg-gradient-to-r from-purple-500/10 to-blue-500/10 rounded-lg p-6 text-center">
+                    <div className="text-4xl mb-3">🎯</div>
+                    <p className="text-gray-600 dark:text-gray-300 mb-2">
+                      3D Model: {experience.title}
+                    </p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                      Use the AR Preview button below to view this model in augmented reality
+                    </p>
+                    <div className="text-xs font-mono text-blue-600 dark:text-blue-400 break-all bg-black/20 rounded p-2">
+                      {experience.mediaUrl}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {experience.type === "Message" && (
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                  Message Content
+                </label>
+                <div className="glass-darker rounded-lg p-4 border border-white/20">
+                  <div className="bg-gradient-to-r from-blue-500/10 to-cyan-500/10 rounded-lg p-6 text-center">
+                    <div className="text-4xl mb-3">💬</div>
+                    <p className="text-gray-600 dark:text-gray-300">
+                      This experience will display a message in AR
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Action Buttons */}

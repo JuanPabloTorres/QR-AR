@@ -34,17 +34,17 @@ export default function EditExperiencePage() {
       try {
         const exp = await getExperienceById(id);
 
-        if (!exp || !exp.data) {
+        if (!exp?.success || !exp.data) {
           setError("Experience not found");
           return;
         }
 
         setExperience(exp.data);
-        setTitle(exp.data?.title);
-        setType(exp.data?.type);
-        setMediaUrl(exp.data?.mediaUrl);
-        setThumbnailUrl(exp.data?.thumbnailUrl || "");
-        setIsActive(exp.data?.isActive);
+        setTitle(exp.data.title);
+        setType(exp.data.type);
+        setMediaUrl(exp.data.mediaUrl);
+        setThumbnailUrl(exp.data.thumbnailUrl || "");
+        setIsActive(exp.data.isActive);
       } catch (err) {
         setError(
           err instanceof Error ? err.message : "Failed to load experience"
@@ -109,7 +109,7 @@ export default function EditExperiencePage() {
       const qrCodeUrl =
         experience.qrCodeUrl || `${baseUrl}/ar/${experience.id}`;
 
-      await updateExperience(experience.id, {
+      const response = await updateExperience(experience.id, {
         title,
         type,
         mediaUrl,
@@ -117,6 +117,10 @@ export default function EditExperiencePage() {
         isActive,
         qrCodeUrl,
       });
+
+      if (!response.success) {
+        throw new Error(response.error || "Failed to update experience");
+      }
 
       setSuccess(true);
 

@@ -67,8 +67,7 @@ namespace QrAr.Api.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("QRCodeUrl")
-                        .IsRequired()
+                    b.Property<string>("QrCodeUrl")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("ThumbnailUrl")

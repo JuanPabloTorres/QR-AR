@@ -1,23 +1,26 @@
 export type Experience = {
   id: string;
   title: string;
-  description?: string;
   type: "Video" | "Model3D" | "Image" | "Message";
   mediaUrl: string;
   thumbnailUrl?: string;
-  // Nuevos campos para objetos 3D
-  modelData?: Uint8Array | ArrayBuffer | Buffer; // Datos binarios del modelo 3D
-  modelFormat?: Model3DFormat; // Formato del archivo 3D
-  modelSize?: number; // Tamaño del archivo en bytes
-  modelFileName?: string; // Nombre original del archivo
   isActive: boolean;
-  createdAt?: string;
-  updatedAt?: string;
-  createdAtUtc?: string;
-  qrCodeUrl?: string; // URL del código QR generado
+  createdAtUtc: string;
+  qrCodeUrl?: string;
 };
 
-// Tipos de formatos 3D soportados
+export type Experience = {
+  id: string;
+  title: string;
+  type: "Video" | "Model3D" | "Image" | "Message";
+  mediaUrl: string;
+  thumbnailUrl?: string;
+  isActive: boolean;
+  createdAtUtc: string;
+  qrCodeUrl?: string;
+};
+
+// Extended types for 3D model functionality
 export type Model3DFormat =
   | "gltf" // GL Transmission Format
   | "glb" // Binary GL Transmission Format
@@ -33,7 +36,16 @@ export type Model3DFormat =
   | "usda" // Universal Scene Description (ASCII)
   | "usdc"; // Universal Scene Description (Binary)
 
-// Utilidad para validar formatos 3D
+// Helper types for 3D model handling
+export type Model3DFile = {
+  data: Uint8Array | ArrayBuffer | Buffer;
+  format: Model3DFormat;
+  size: number;
+  fileName: string;
+  mimeType: string;
+};
+
+// Utility for supported 3D formats
 export const SUPPORTED_3D_FORMATS: Record<Model3DFormat, string> = {
   gltf: "model/gltf+json",
   glb: "model/gltf-binary",
@@ -50,7 +62,7 @@ export const SUPPORTED_3D_FORMATS: Record<Model3DFormat, string> = {
   usdc: "model/vnd.usd+binary",
 };
 
-// Helper para determinar el formato desde la extensión
+// Helper for determining format from extension
 export function getModelFormatFromExtension(
   filename: string
 ): Model3DFormat | null {
@@ -60,23 +72,6 @@ export function getModelFormatFromExtension(
     : null;
 }
 
-// Tipo para la carga de archivos 3D
-export type Model3DFile = {
-  data: Uint8Array | ArrayBuffer | Buffer;
-  format: Model3DFormat;
-  size: number;
-  fileName: string;
-  mimeType: string;
-};
-
+// Request types
 export type CreateExperienceRequest = Omit<Experience, "id" | "createdAtUtc">;
 export type UpdateExperienceRequest = Omit<Experience, "id" | "createdAtUtc">;
-
-// Tipo específico para experiencias con modelos 3D
-export type Model3DExperience = Experience & {
-  type: "Model3D";
-  modelData: Uint8Array | ArrayBuffer | Buffer;
-  modelFormat: Model3DFormat;
-  modelSize: number;
-  modelFileName: string;
-};
